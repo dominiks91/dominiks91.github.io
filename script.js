@@ -1,4 +1,3 @@
-
 // ========= KONFIGURACJA =========
 const CONFIG = {
   EMAILJS_SERVICE_ID: 'service_kq8zmvw',
