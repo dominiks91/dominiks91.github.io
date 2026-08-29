@@ -1934,10 +1934,13 @@ function fmtRain(v, jedn, miejsc) {
 }
 
 function mushroomMethodText() {
-  return 'Wskaźnik MTD ocenia pogodowy potencjał warunków grzybowych. ' +
-    'Wilgoć M tworzy bazę wyniku, temperatura T ogranicza możliwość jej wykorzystania, ' +
-    'a rozwój D odzwierciedla opóźnienie po opadach. ' +
-    'Wynik nie określa liczby ani pewnej obecności grzybów.';
+  return 'Jak działa wskaźnik? ' +
+    'Ocenia pogodowe warunki do pojawienia się grzybów w skali od 0 do 100. ' +
+    'Wilgoć pokazuje, ile wody pozostało w glebie i ściółce po opadach z ostatnich 21 dni. ' +
+    'Temperatura określa, czy warunki są odpowiednie do wzrostu. ' +
+    'Rozwój uwzględnia czas, który upłynął od deszczu. ' +
+    'Im wyższy wynik, tym korzystniejszy układ pogodowy. ' +
+    'Wskaźnik nie określa liczby grzybów w lesie.';
 }
 
 function mushroomComponentsText(mi) {
