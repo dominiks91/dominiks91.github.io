@@ -411,6 +411,19 @@
     .upload-box { background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.1); }
     .upload-box .mission-btn { margin:14px; width:calc(100% - 28px); padding:14px; }
     .upload-status { padding:0 14px 14px; color:#2d5016; font-size:.92em; }
+
+    .photo-team-bar {
+      display:flex; align-items:center; justify-content:space-between;
+      background:#f1f7ea; font-weight:bold; color:#2d5016;
+    }
+    .photo-change {
+      background:none; border:none; color:#2d5016; text-decoration:underline;
+      cursor:pointer; font-size:.85em; padding:4px;
+    }
+    .upload-note {
+      padding:0 14px 14px; font-size:.84em; color:#888; line-height:1.5;
+    }
+
     .photo-count { color:#555; margin:10px 0; }
 
     @media (max-width: 600px) {
@@ -576,7 +589,7 @@
       <button class="tab-button" onclick="showTab('rules')">📜 Zasady</button>
       <button class="tab-button" onclick="showTab('points')">⭐ Punktacja</button>
       <button class="tab-button" onclick="showTab('results')">🏆 Wyniki</button>
-      <button class="tab-button" onclick="showTab('missions')">🎯 Karta misji</button>
+      <button class="tab-button" id="missionsTabBtn" style="display:none" onclick="showTab('missions')">🎯 Karta misji</button>
       <button class="tab-button" onclick="showTab('photos')">📤 Wyślij zdjęcia</button>
       <button class="tab-button" onclick="showTab('teams')">👥 Drużyny</button>
       <button class="tab-button" onclick="showTab('weather')">🌦️ Pogoda</button>
@@ -624,6 +637,10 @@
         <li>Koszyk wiklinowy lub z naturalnych materiałów. Reklamówka to −10 punktów.</li>
         <li>Nóż do grzybów.</li>
         <li>Naładowany telefon — trzy misje wymagają zdjęcia.</li>
+        <li>Zdjęcia wysyła ze strony ta osoba, która je zrobiła — potrzebny jest kod drużyny
+            z maila z przydziałem. Nie przesyłajcie ich sobie komunikatorem, bo tracą
+            datę i lokalizację.</li>
+        <li>Do każdej misji liczy się jedno zdjęcie. Kolejne zastępuje poprzednie.</li>
         <li>Karta misji, którą dostaniecie na starcie, i długopis. W lesie nie ma zasięgu.</li>
         <li>Buty i kurtka na zmienną pogodę.</li>
       </ul>
@@ -778,13 +795,20 @@
         Trzy misje wymagają zdjęcia: muchomor, grzyb na drzewie i zdjęcie drużyny.
         W lesie po prostu je zróbcie — wyślecie po powrocie, przy ognisku.
         <br><br>
-        Zdjęcia trafiają prosto do komisji. Zachowują datę i miejsce wykonania.
+        Do wysłania potrzebny jest <strong>kod drużyny</strong> z maila z przydziałem.
+        Ma go każdy w drużynie, więc zdjęcie wysyła ten, kto je zrobił.
       </div>
 
-      <div class="upload-box">
-        <div class="judge-field">
-          <label>Twoja drużyna</label>
-          <select id="photoTeam" onchange="renderMyPhotos()"></select>
+      <div id="photoLoginBox">
+        <button class="mission-btn primary" onclick="loginTeamForPhotos()">
+          🔑 Podaj kod drużyny
+        </button>
+      </div>
+
+      <div class="upload-box" id="photoUploadBox" style="display:none">
+        <div class="judge-field photo-team-bar">
+          <span id="photoTeamName"></span>
+          <button class="photo-change" onclick="logoutTeamPhotos()">zmień</button>
         </div>
 
         <div class="judge-field">
@@ -800,6 +824,10 @@
 
         <button class="mission-btn primary" onclick="uploadMissionPhoto()">📤 Wyślij zdjęcie</button>
         <div id="photoStatus" class="upload-status"></div>
+        <div class="upload-note">
+          Wysłanie drugiego zdjęcia do tej samej misji <strong>zastąpi poprzednie</strong>.
+          Do każdej misji liczy się jedno, ostatnie zdjęcie.
+        </div>
       </div>
 
       <h3>Zdjęcia Twojej drużyny</h3>
