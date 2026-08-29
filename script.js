@@ -1933,6 +1933,14 @@ function fmtRain(v, jedn, miejsc) {
   return n.toFixed(miejsc === undefined ? 1 : miejsc) + (jedn || '');
 }
 
+// Temperatury wyswietlamy z kropka jako separatorem dziesietnym.
+function fmtTemp(v, jedn, miejsc) {
+  if (v === null || v === undefined || v === '') return '—';
+  const n = Number(v);
+  if (isNaN(n)) return '—';
+  return n.toFixed(miejsc === undefined ? 1 : miejsc) + (jedn || '');
+}
+
 function mushroomMethodText() {
   return 'Jak działa wskaźnik? ' +
     'Ocenia pogodowe warunki do pojawienia się grzybów w skali od 0 do 100. ' +
@@ -2033,7 +2041,7 @@ function renderWeatherStrip(d) {
   box.innerHTML = `
     <div class="ws-item">
       <span class="ws-icon">${weatherIcon(c.icon)}</span>
-      <span class="ws-temp">${fmt(c.tempC, ' °C')}</span>
+      <span class="ws-temp">${fmtTemp(c.tempC, ' °C')}</span>
     </div>
     <div class="ws-item ws-sep">
       <span class="ws-lbl">deszcz dziś</span>
@@ -2086,7 +2094,7 @@ function renderWeather(d) {
             <div class="wn-icon">${weatherIcon(c.icon)}</div>
 
             <div>
-              <div class="wn-temp">${fmt(c.tempC, ' °C')}</div>
+              <div class="wn-temp">${fmtTemp(c.tempC, ' °C')}</div>
               <div class="wn-cond">${c.condition || ''}</div>
 
               ${
