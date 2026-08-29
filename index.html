@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🍄 II Wielkie Grzybobranie - Grądy Szlacheckie 2026</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+    }
+    .header {
+      text-align: center;
+      padding: 20px;
+      background: #2d5016;
+      color: white;
+      border-radius: 10px;
+      position: relative;
+    }
+    .header-content {
+      display: block;
+      text-align: center;
+      margin-bottom: 15px;
+    }
+    .logo {
+      width: 100%;
+      max-width: 420px;
+      height: auto;
+      object-fit: contain;
+      border-radius: 12px;
+      margin: 0 auto 15px auto;
+      display: block;
+    }
+    .header-text {
+      text-align: center;
+    }
+    .header h1 { margin: 0; font-size: 2.2em; }
+    .header h2 { margin: 0; font-size: 1.5em; font-weight: normal; }
+    
+    /* Style dla odliczania */
+    .countdown-container {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+    .countdown-display {
+      font-size: 1.3em;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+    .countdown-expired {
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #ffcdd2;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+    
+
+    /* ===== RAMKA INFORMACYJNA ===== */
+    .note-box {
+      background: #f1f7ea; border-left: 4px solid #2d5016;
+      padding: 14px 16px; margin: 15px 0; border-radius: 6px; line-height: 1.55;
+    }
+
+    /* ===== KARTA MISJI ===== */
+    .mission-toolbar {
+      display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+      justify-content: space-between; margin: 18px 0;
+      padding: 14px 16px; background: #2d5016; color: #fff; border-radius: 8px;
+    }
+    .mission-score { font-size: 1.35em; font-weight: bold; }
+    .mission-btn {
+      background: #f0a500; color: #2d2d2d; border: none; padding: 10px 16px;
+      border-radius: 6px; font-weight: bold; cursor: pointer; margin-left: 6px; font-size: .95em;
+    }
+    .mission-btn.primary { background: #fff; }
+    .mission-btn:hover { filter: brightness(1.08); }
+
+    .mission-cat { margin-bottom: 22px; }
+    .mission-cat-head {
+      display: flex; justify-content: space-between; align-items: baseline;
+      background: #dfe9d5; padding: 9px 14px; border-radius: 6px 6px 0 0;
+      font-weight: bold; color: #2d5016; border-bottom: 2px solid #2d5016;
+    }
+    .mission-cat-head small { font-weight: normal; color: #5a6b4a; font-size: .8em; }
+
+    .mission-row {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 12px 14px; background: #fff; border-bottom: 1px solid #e4e4e4;
+      cursor: pointer; transition: background .15s;
+    }
+    .mission-row:hover { background: #f7faf3; }
+    .mission-row.done { background: #eaf5e0; }
+    .mission-row.judged, .mission-row.penalty { cursor: default; }
+    .mission-row.penalty { background: #fdf2f2; }
+
+    .mission-check {
+      flex: 0 0 26px; height: 26px; border: 2px solid #2d5016; border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; color: #2d5016; background: #fff;
+    }
+    .mission-row.done .mission-check { background: #2d5016; color: #fff; }
+    .mission-row.penalty .mission-check { border-color: #c62828; color: #c62828; }
+
+    .mission-body { flex: 1; }
+    .mission-title { font-weight: bold; color: #2d3d1d; }
+    .mission-pts {
+      float: right; background: #2d5016; color: #fff; padding: 2px 9px;
+      border-radius: 11px; font-size: .82em; margin-left: 8px;
+    }
+    .mission-pts.neg { background: #c62828; }
+    .mission-desc { font-size: .89em; color: #666; margin-top: 3px; line-height: 1.45; }
+
+    .beauty-picker { margin-top: 8px; font-size: .9em; }
+    .beauty-picker select {
+      padding: 5px 8px; border: 1px solid #2d5016; border-radius: 5px;
+      margin-left: 6px; font-size: 1em;
+    }
+    .print-only { display: none; }
+
+
+
+
+
+
+    /* ===== OKIENKO NA HASLO ===== */
+    #pwOverlay {
+      position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:10001;
+      display:flex; align-items:center; justify-content:center; padding:20px;
+    }
+    .pw-box {
+      background:#fff; border-radius:12px; padding:24px; width:100%; max-width:360px;
+      box-shadow:0 8px 30px rgba(0,0,0,.35);
+    }
+    .pw-title { font-size:1.15em; font-weight:bold; color:#2d5016; margin-bottom:14px; }
+    #pwInput {
+      width:100%; padding:14px; font-size:1.15em; border:2px solid #b8c9a8;
+      border-radius:8px; box-sizing:border-box; text-align:center; letter-spacing:2px;
+    }
+    #pwInput:focus { outline:none; border-color:#2d5016; }
+    .pw-hint { font-size:.84em; color:#888; margin-top:9px; line-height:1.45; }
+    .pw-btns { display:flex; gap:9px; margin-top:18px; }
+    .pw-btns button {
+      flex:1; padding:13px; border:none; border-radius:8px;
+      font-weight:bold; cursor:pointer; font-size:1em;
+    }
+    .pw-cancel { background:#eee; color:#666; }
+    .pw-ok { background:#2d5016; color:#fff; }
+
+    /* ===== WYNIKI NA ZYWO ===== */
+    .results-live, .results-final {
+      padding:11px 15px; border-radius:8px; margin-bottom:16px; font-size:.93em;
+    }
+    .results-live { background:#fff8e6; border:1px solid #f0d89a; color:#8a6d1f; }
+    .results-final { background:#e8f5dc; border:1px solid #7aa354; color:#2d5016; font-weight:bold; }
+    .live-dot {
+      display:inline-block; width:9px; height:9px; border-radius:50%;
+      background:#e04f4f; margin-right:5px; animation:pulse 1.6s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+    .results-waiting {
+      text-align:center; padding:45px 20px; background:#fff;
+      border:2px dashed #cfd8c4; border-radius:10px; color:#777;
+    }
+    .rw-icon { font-size:2.6em; margin-bottom:10px; }
+    .rw-sub { font-size:.9em; color:#999; }
+
+    .podium { display:flex; flex-direction:column; gap:9px; }
+    .podium-row {
+      display:flex; align-items:center; gap:12px; background:#fff;
+      border-radius:9px; padding:13px 15px; box-shadow:0 2px 6px rgba(0,0,0,.09);
+    }
+    .podium-row.winner { background:#fff8e6; border:2px solid #f0a500; }
+    .pr-place { font-size:1.5em; min-width:34px; text-align:center; }
+    .pr-body { flex:1; min-width:0; }
+    .pr-name { font-weight:bold; color:#2d3d1d; font-size:1.06em; }
+    .pr-bar { height:6px; background:#eee; border-radius:3px; margin:6px 0 5px; overflow:hidden; }
+    .pr-fill { height:100%; background:linear-gradient(90deg,#7aa354,#2d5016); border-radius:3px; }
+    .pr-detail { font-size:.78em; color:#888; line-height:1.4; }
+    .pr-total { font-size:1.55em; font-weight:bold; color:#2d5016; min-width:56px; text-align:right; }
+    .results-foot { text-align:center; color:#aaa; font-size:.82em; margin-top:16px; }
+
+
+    /* ===== WERYFIKACJA ZDJEC ===== */
+    .photo-check { display:flex; flex-wrap:wrap; gap:10px; padding:0 14px 13px 52px; background:#fff; }
+    .pc-item { display:flex; gap:9px; align-items:flex-start; background:#f7faf3;
+               border-radius:7px; padding:8px; flex:1 1 260px; }
+    .pc-item img { width:62px; height:62px; object-fit:cover; border-radius:6px;
+                   border:2px solid #2d5016; flex-shrink:0; }
+    .pc-flags { display:flex; flex-direction:column; gap:3px; min-width:0; }
+    .pc-flag { font-size:.74em; padding:2px 7px; border-radius:9px; white-space:nowrap;
+               overflow:hidden; text-overflow:ellipsis; }
+    .pc-ok   { background:#e3f3d6; color:#2d5016; }
+    .pc-zle  { background:#f8dede; color:#9a3b3b; font-weight:bold; }
+    .pc-brak { background:#f0f0f0; color:#888; }
+    .pc-info { background:#eef3f8; color:#4a6b8a; }
+    @media (max-width:600px) { .photo-check { padding-left:14px; } }
+
+    /* ===== GLOSOWANIE MISS KAPELUSZA ===== */
+    .vote-box { margin-top:11px; background:#f7faf3; border-radius:7px; padding:11px; }
+    .vote-label { font-size:.87em; font-weight:bold; color:#2d5016; margin-bottom:7px; }
+    .vote-scale { display:flex; flex-wrap:wrap; gap:5px; }
+    .vote-btn {
+      flex:1; min-width:34px; padding:9px 0; background:#fff; border:1px solid #b8c9a8;
+      border-radius:6px; cursor:pointer; font-weight:bold; color:#2d5016; font-size:.95em;
+    }
+    .vote-btn:hover { background:#eaf5e0; }
+    .vote-btn.picked { background:#2d5016; color:#fff; border-color:#2d5016; }
+    .vote-status { font-size:.83em; color:#666; margin-top:8px; line-height:1.45; }
+    .vote-trim { color:#999; font-style:italic; }
+
+    @media (max-width:600px) {
+      .pr-total { font-size:1.3em; min-width:46px; }
+      .pr-place { font-size:1.25em; min-width:26px; }
+      .vote-btn { min-width:28px; padding:11px 0; }
+    }
+
+    /* ===== PASEK POGODOWY W NAGLOWKU ===== */
+    #weatherStrip {
+      display:flex; flex-wrap:wrap; align-items:center; gap:14px;
+      background:#fff; border-radius:10px; padding:12px 16px; margin:-8px 0 18px;
+      box-shadow:0 2px 6px rgba(0,0,0,.1); font-size:.93em;
+    }
+    .ws-item { display:flex; align-items:center; gap:7px; }
+    .ws-sep { border-left:1px solid #e0e0e0; padding-left:14px; }
+    .ws-icon { font-size:1.6em; }
+    .ws-temp { font-size:1.35em; font-weight:bold; color:#2d5016; }
+    .ws-lbl { color:#888; font-size:.88em; }
+    .ws-val { font-weight:bold; color:#2d3d1d; }
+    .ws-mi { padding:3px 9px; border-radius:11px; font-size:.9em; }
+    .ws-more {
+      margin-left:auto; background:none; border:none; color:#2d5016;
+      font-weight:bold; cursor:pointer; font-size:.92em; padding:4px;
+    }
+    .mi-good { background:#e3f3d6; color:#2d5016; }
+    .mi-mid  { background:#fdf3d8; color:#8a6d1f; }
+    .mi-low  { background:#f5e0e0; color:#9a3b3b; }
+
+    /* ===== PANEL POGODY ===== */
+    .weather-stale {
+      background:#fff8e6; border:1px solid #f0d89a; color:#8a6d1f;
+      padding:11px 14px; border-radius:6px; margin-bottom:16px; font-size:.92em;
+    }
+    .weather-now {
+      background:#fff; border-radius:10px; padding:20px;
+      box-shadow:0 2px 8px rgba(0,0,0,.09); margin-bottom:18px;
+    }
+    .wn-main { display:flex; align-items:center; gap:18px; margin-bottom:18px; }
+    .wn-icon { font-size:3.4em; line-height:1; }
+    .wn-temp { font-size:2.5em; font-weight:bold; color:#2d5016; line-height:1.1; }
+    .wn-cond { color:#555; font-size:1.03em; }
+    .wn-feels { color:#999; font-size:.87em; margin-top:2px; }
+    .wn-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(135px,1fr)); gap:11px; }
+    .wn-cell {
+      background:#f7faf3; border-radius:7px; padding:11px;
+      display:flex; flex-direction:column; gap:2px;
+    }
+    .wn-cell-icon { font-size:1.15em; }
+    .wn-cell-lbl { font-size:.79em; color:#888; text-transform:uppercase; letter-spacing:.4px; }
+    .wn-cell-val { font-weight:bold; color:#2d3d1d; font-size:1.06em; }
+
+    .mushroom-index { border-radius:10px; padding:18px; margin-bottom:22px; }
+    .mushroom-index.mi-good { background:#e8f5dc; border:2px solid #7aa354; }
+    .mushroom-index.mi-mid  { background:#fdf6e3; border:2px solid #e0c069; }
+    .mushroom-index.mi-low  { background:#f9eaea; border:2px solid #c98b8b; }
+    .mi-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+    .mi-title { font-weight:bold; font-size:1.06em; }
+    .mi-value { font-size:2.1em; font-weight:bold; }
+    .mi-value small { font-size:.42em; opacity:.6; }
+    .mi-bar { height:9px; background:rgba(0,0,0,.1); border-radius:5px; overflow:hidden; }
+    .mi-fill { height:100%; background:currentColor; opacity:.75; border-radius:5px; }
+    .mi-label { font-weight:bold; font-size:1.16em; margin-top:9px; }
+    .mi-reason { font-size:.9em; margin-top:5px; opacity:.85; line-height:1.5; }
+    .mi-note { font-size:.78em; margin-top:7px; opacity:.6; font-style:italic; }
+
+    .weather-sub { color:#666; font-size:.93em; margin:4px 0 12px; }
+    .rain-chart {
+      display:flex; align-items:flex-end; gap:3px; height:150px;
+      background:#fff; border-radius:8px; padding:14px 10px 6px;
+      box-shadow:0 2px 6px rgba(0,0,0,.08); overflow-x:auto;
+    }
+    .rain-col { flex:1; min-width:26px; display:flex; flex-direction:column;
+                align-items:center; height:100%; justify-content:flex-end; }
+    .rain-val { font-size:.65em; color:#4a7fb5; font-weight:bold; margin-bottom:2px; }
+    .rain-bar { width:70%; background:linear-gradient(#7db3e0,#4a7fb5); border-radius:3px 3px 0 0; min-height:2px; }
+    .rain-day { font-size:.62em; color:#999; margin-top:5px; white-space:nowrap; }
+
+    .forecast-row { display:flex; gap:10px; overflow-x:auto; padding:4px 0 10px; }
+    .fc-card {
+      flex:0 0 108px; background:#fff; border-radius:9px; padding:13px 9px;
+      text-align:center; box-shadow:0 2px 6px rgba(0,0,0,.09); position:relative;
+    }
+    .fc-card.fc-event { border:2px solid #f0a500; padding-top:22px; }
+    .fc-badge {
+      position:absolute; top:0; left:0; right:0; background:#f0a500; color:#3a2f00;
+      font-size:.58em; font-weight:bold; padding:3px; border-radius:7px 7px 0 0; letter-spacing:.4px;
+    }
+    .fc-day { font-size:.83em; color:#777; }
+    .fc-icon { font-size:1.9em; margin:5px 0; }
+    .fc-temp { font-weight:bold; color:#2d5016; font-size:1.14em; }
+    .fc-temp small { color:#999; font-weight:normal; }
+    .fc-rain { font-size:.75em; color:#4a7fb5; margin-top:4px; }
+    .fc-cond { font-size:.71em; color:#888; margin-top:4px; line-height:1.3; }
+
+    .weather-foot { color:#999; font-size:.85em; margin-top:18px; text-align:center; line-height:1.6; }
+
+    @media (max-width:600px) {
+      #weatherStrip { gap:10px; padding:10px 12px; font-size:.87em; }
+      .ws-sep { border-left:none; padding-left:0; }
+      .ws-more { margin-left:0; flex-basis:100%; text-align:left; }
+      .wn-temp { font-size:2.1em; }
+      .wn-icon { font-size:2.8em; }
+      .rain-chart { height:130px; }
+    }
+
+    /* ===== ZAKLADKI NA TELEFONIE ===== */
+    @media (max-width: 700px) {
+      .tabs {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        margin: 16px 0;
+      }
+      .tab-button {
+        padding: 10px 4px;
+        font-size: .78em;
+        line-height: 1.25;
+        white-space: normal;     /* dluzsze nazwy lamia sie na dwie linie */
+        min-height: 52px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+    }
+    @media (max-width: 360px) {
+      .tabs { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* ===== KOMISJA SEDZIOWSKA ===== */
+    .judge-picker { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 22px; }
+    .judge-team-btn {
+      background:#fff; border:2px solid #2d5016; color:#2d5016;
+      padding:11px 16px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:1em;
+    }
+    .judge-team-btn.active { background:#2d5016; color:#fff; }
+    .judge-team-btn.done { border-color:#7aa354; }
+    .judge-team-btn.done:not(.active) { background:#eaf5e0; }
+
+
+    .judge-whoami {
+      background:#f1f7ea; border-left:4px solid #2d5016; border-radius:6px;
+      padding:12px 14px; margin:8px 0 18px; font-size:.93em; line-height:1.5; clear:both;
+    }
+    .judge-team-btn.own {
+      background:#f0f0f0; border-color:#bbb; color:#999; cursor:not-allowed;
+    }
+
+    .judge-team-title {
+      background:#2d5016; color:#fff; padding:12px 16px;
+      border-radius:8px 8px 0 0; margin:0 0 0 0; font-size:1.15em;
+    }
+
+    .judge-field { padding:13px 14px; background:#fff; border-bottom:1px solid #e4e4e4; }
+    .judge-field label { display:block; font-weight:bold; color:#2d3d1d; margin-bottom:6px; }
+    .judge-field input, .judge-field select {
+      width:100%; max-width:280px; padding:11px; font-size:1.05em;
+      border:1px solid #b8c9a8; border-radius:6px; box-sizing:border-box;
+    }
+    .judge-hint { display:block; font-size:.85em; color:#777; margin-top:5px; }
+
+    .judge-photos { display:flex; gap:6px; flex-shrink:0; }
+    .judge-photos img {
+      width:58px; height:58px; object-fit:cover; border-radius:6px; border:2px solid #2d5016;
+    }
+    .judge-nophoto {
+      flex-shrink:0; width:58px; height:58px; border:2px dashed #ccc; border-radius:6px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:.7em; color:#aaa; text-align:center; line-height:1.2;
+    }
+
+    .judge-summary {
+      display:flex; flex-wrap:wrap; gap:14px; align-items:center;
+      background:#f1f7ea; border:2px solid #2d5016; border-radius:8px;
+      padding:14px 16px; margin:16px 0; font-size:.97em;
+    }
+    .judge-total { margin-left:auto; font-size:1.3em; color:#2d5016; }
+    .judge-save { width:100%; padding:15px; font-size:1.1em; }
+
+    .scoreboard-table { width:100%; border-collapse:collapse; background:#fff; margin-top:10px; }
+    .scoreboard-table th {
+      background:#2d5016; color:#fff; padding:10px 8px; font-size:.85em; text-align:left;
+    }
+    .scoreboard-table td { padding:10px 8px; border-bottom:1px solid #eee; }
+    .scoreboard-table tr.winner { background:#fff8e6; }
+    .score-total { font-weight:bold; font-size:1.15em; color:#2d5016; }
+
+    /* ===== WYSYLKA ZDJEC ===== */
+    .upload-box { background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,.1); }
+    .upload-box .mission-btn { margin:14px; width:calc(100% - 28px); padding:14px; }
+    .upload-status { padding:0 14px 14px; color:#2d5016; font-size:.92em; }
+    .photo-count { color:#555; margin:10px 0; }
+
+    @media (max-width: 600px) {
+      .judge-team-btn { flex:1 1 calc(50% - 8px); }
+      .judge-summary { font-size:.9em; gap:10px; }
+      .judge-total { margin-left:0; flex-basis:100%; }
+      .scoreboard-table th, .scoreboard-table td { padding:8px 5px; font-size:.88em; }
+    }
+
+    /* ===== GALERIA ===== */
+    .gallery-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 14px; margin-top: 18px;
+    }
+    .gallery-item {
+      margin: 0; cursor: pointer; border-radius: 8px; overflow: hidden;
+      background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.14); transition: transform .18s;
+    }
+    .gallery-item:hover { transform: translateY(-3px); }
+    .gallery-item img { width: 100%; height: 165px; object-fit: cover; display: block; }
+    .gallery-item figcaption { padding: 9px 11px; font-size: .87em; color: #555; }
+    .gallery-empty {
+      text-align: center; padding: 45px 20px; color: #777;
+      background: #fff; border: 2px dashed #cfd8c4; border-radius: 8px;
+    }
+
+    #lightbox {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.92);
+      z-index: 10000; align-items: center; justify-content: center; padding: 20px;
+    }
+    #lightbox figure { margin: 0; max-width: 92%; max-height: 92%; text-align: center; }
+    #lightbox img { max-width: 100%; max-height: 78vh; border-radius: 6px; }
+    #lightbox figcaption { color: #fff; margin-top: 12px; font-size: 1.02em; }
+    .lb-nav, .lb-close {
+      background: rgba(255,255,255,.14); color: #fff; border: none;
+      cursor: pointer; border-radius: 50%; line-height: 1;
+    }
+    .lb-nav { font-size: 2.1em; padding: 14px 20px; }
+    .lb-nav:hover, .lb-close:hover { background: rgba(255,255,255,.3); }
+    .lb-close { position: absolute; top: 16px; right: 20px; font-size: 2.3em; padding: 4px 16px; }
+
+    @media (max-width: 600px) {
+      .mission-toolbar { flex-direction: column; align-items: stretch; text-align: center; }
+      .mission-btn { margin: 5px 3px 0; }
+      .gallery-item img { height: 140px; }
+      .lb-nav { font-size: 1.5em; padding: 10px 13px; }
+    }
+
+    @media print {
+      .no-print, .tabs, .header, #lightbox { display: none !important; }
+      .print-only { display: block !important; }
+      .tab-panel { display: block !important; }
+      .mission-row { break-inside: avoid; }
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;          /* bez tego 9 zakladek wychodzi poza ekran */
+      justify-content: center;
+      margin: 20px 0;
+      gap: 8px;
+    }
+    .tab-button {
+      padding: 10px 18px;
+      background: #ddd;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+      font-weight: bold;
+      font-size: .95em;
+      white-space: nowrap;
+    }
+    .tab-button.active { background: #2d5016; color: white; }
+
+    .tab-button.tab-primary {
+      background: #f0a500; color: #2d2d2d;
+    }
+    .tab-button.tab-primary.active { background: #2d5016; color: #fff; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .rules, .points, .registration, .admin-section {
+      background: white;
+      padding: 20px;
+      margin: 15px 0;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    form input, form select {
+      width: 100%; padding: 10px; margin: 8px 0;
+      border-radius: 5px; border: 1px solid #ccc;
+    }
+    form button {
+      background: #2d5016; color: white;
+      padding: 10px 15px; border: none;
+      border-radius: 5px; cursor: pointer;
+    }
+    table {
+      width: 100%; border-collapse: collapse; margin-top: 15px;
+    }
+    table, th, td { border: 1px solid #ccc; }
+    th, td { padding: 8px; text-align: center; }
+    #teamsContainer { margin-top: 20px; }
+    
+    /* Responsywność dla logo */
+    @media (max-width: 600px) {
+      .logo {
+        width: 200px;
+        height: 200px;
+      }
+      .header h1 { font-size: 1.8em; }
+    }
+/* Potencjał grzybowy na kartach prognozy */
+
+.fc-mushroom {
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid rgba(45, 80, 22, 0.16);
+  line-height: 1.25;
+}
+
+.fc-mushroom-value {
+  color: #2d5016;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.fc-mushroom-label {
+  margin-top: 2px;
+  color: #5f6f57;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-content">
+        <img src="icon.jpg" alt="Logo Grzybobrania" class="logo">
+        <div class="header-text">
+          <h1>🍄 II Wielkie Grzybobranie</h1>
+          <h2>Grądy Szlacheckie 2026</h2>
+        </div>
+      </div>
+      <p><strong>📅 Data:</strong> sobota, 3 października 2026</p>
+      <p><strong>⏰ Zbiórka:</strong> godzina 11, ul. Wilcza 14, Grądy Szlacheckie</p>
+      <p><strong>👥 Drużyny:</strong> wylosowane po zamknięciu zapisów</p>
+      
+      <!-- DODANY ELEMENT COUNTDOWN -->
+      <div class="countdown-container">
+        <p><strong>⏳ Czas do zamknięcia zapisów:</strong></p>
+        <div id="countdown">Ładowanie...</div>
+      </div>
+    </div>
+
+    <!-- PASEK POGODOWY ZE STACJI -->
+    <div id="weatherStrip" style="display:none"></div>
+
+    <div class="tabs">
+      <button class="tab-button active tab-primary" onclick="showTab('registration')">📝 Rejestracja</button>
+      <button class="tab-button" onclick="showTab('rules')">📜 Zasady</button>
+      <button class="tab-button" onclick="showTab('points')">⭐ Punktacja</button>
+      <button class="tab-button" onclick="showTab('results')">🏆 Wyniki</button>
+      <button class="tab-button" onclick="showTab('missions')">🎯 Karta misji</button>
+      <button class="tab-button" onclick="showTab('photos')">📤 Wyślij zdjęcia</button>
+      <button class="tab-button" onclick="showTab('teams')">👥 Drużyny</button>
+      <button class="tab-button" onclick="showTab('weather')">🌦️ Pogoda</button>
+      <button class="tab-button" onclick="showTab('gallery')">📸 Zeszły rok</button>
+      <button class="tab-button" onclick="showTab('judge')">⚖️ Komisja</button>
+      <button class="tab-button" onclick="showTab('admin')">🔧 Admin</button>
+    </div>
+
+    <!-- ZASADY -->
+    <div id="rules" class="tab-panel rules">
+      <h2>📜 Zasady Grzybobrania</h2>
+
+      <h3>🌲</h3>
+      <ul>
+        <li>Śmieci zabieramy ze sobą.</li>
+        <li>Grzyby ścinamy nożem, nie wyrywamy — grzybnia zostaje w ziemi.</li>
+        <li>Nie rozkopujemy ściółki i nie niszczymy grzybów, których nie zbieramy.</li>
+        <li>Obowiązuje regulamin Lasów Państwowych.</li>
+      </ul>
+
+      <h3>⚖️</h3>
+      <ul>
+        <li>Grzyb należy do tego, kto pierwszy do niego podszedł.</li>
+        <li>Do koszyka trafia wyłącznie to, co zebraliście dzisiaj.</li>
+        <li>Grzybów, których nie rozpoznajecie, nie zbieramy. W razie wątpliwości pytamy.</li>
+        <li>Misja zaliczona to misja faktycznie wykonana.</li>
+      </ul>
+
+      <h3>👥</h3>
+      <ul>
+        <li>Drużyna trzyma się razem — maksymalnie 50 metrów między osobami.</li>
+        <li>W każdej drużynie jest przynajmniej jedna osoba, która zna się na grzybach.</li>
+        <li>Kapitan odpowiada za kartę misji i za powrót drużyny na czas.</li>
+      </ul>
+
+      <h3>⏰</h3>
+      <ul>
+        <li>Start wspólny, godzina powrotu podana przed wejściem do lasu.</li>
+        <li>Każda rozpoczęta minuta spóźnienia to −2 punkty.</li>
+        <li>Na zbieranie przewidziane są około dwie godziny.</li>
+      </ul>
+
+      <h3>🎒</h3>
+      <ul>
+        <li>Koszyk wiklinowy lub z naturalnych materiałów. Reklamówka to −10 punktów.</li>
+        <li>Nóż do grzybów.</li>
+        <li>Naładowany telefon — trzy misje wymagają zdjęcia.</li>
+        <li>Karta misji, którą dostaniecie na starcie, i długopis. W lesie nie ma zasięgu.</li>
+        <li>Buty i kurtka na zmienną pogodę.</li>
+      </ul>
+
+      <h3>🏆</h3>
+      <ul>
+        <li>Waga zbioru: 1 kg = 1 punkt, zaokrąglane do 0,1 kg. Z 3,47 kg wychodzi 3,5 pkt.</li>
+        <li>Większość punktów pochodzi jednak z karty misji, nie z wagi.</li>
+        <li>Miss Kapelusza ocenia komisja kapitanów — każdy ocenia wszystkie drużyny oprócz swojej.</li>
+        <li>Grzyb trujący w koszyku to −15 punktów za sztukę.</li>
+      </ul>
+
+      <h3>👨‍👩‍👧‍👦</h3>
+      <ul>
+        <li>Dzieci uczestniczą w drużynie rodzica lub opiekuna, bez osobnego zapisu.</li>
+        <li>Problem w lesie — dzwonimy do organizatorów.</li>
+        <li>Po powrocie ognisko i grill.</li>
+      </ul>
+    </div>
+
+    <!-- PUNKTACJA -->
+    <div id="points" class="tab-panel points">
+      <h2>⭐ Punktacja</h2>
+
+      <p>Punkty pochodzą z trzech źródeł: karty misji, wagi zbioru i oceny Miss Kapelusza.
+         Od sumy odejmujemy kary.</p>
+
+      <h3>⚖️ Waga</h3>
+      <p>Kilogram zbioru to punkt. Waga zaokrąglana jest do jednej dziesiątej kilograma.</p>
+      <ul>
+        <li>3,44 kg → 3,4 pkt</li>
+        <li>3,45 kg → 3,5 pkt</li>
+        <li>3,47 kg → 3,5 pkt</li>
+      </ul>
+      <p>Ważymy raz, cały koszyk, po powrocie na metę. Grzyby niejadalne wyjmujemy przed ważeniem.</p>
+
+      <h3>🎯 Misje</h3>
+      <p>Każda drużyna dostaje na starcie tę samą kartę z dwunastoma zadaniami.
+         Odhaczacie je w lesie, komisja weryfikuje po powrocie.</p>
+      <ul>
+        <li><strong>Łowy</strong> — pokazujecie grzyba w koszyku</li>
+        <li><strong>Oko</strong> — wysyłacie zdjęcie przez zakładkę „Wyślij zdjęcia"</li>
+        <li><strong>Fantazja</strong> — okrzyk, skarby lasu, Miss Kapelusza</li>
+      </ul>
+      <p>Z samych misji można zebrać do 99 punktów, więc ważą one więcej niż waga koszyka.
+         Pełna lista jest w zakładce <strong>🎯 Karta misji</strong>.</p>
+
+      <h3>👑 Miss Kapelusza</h3>
+      <p>Każda drużyna wystawia jednego grzyba. Wszyscy kapitanowie oceniają go w skali 0–10,
+         pomijając własną drużynę.</p>
+      <p>Z ocen odrzucamy najwyższą i najniższą, a wynik to średnia z pozostałych.
+         Pojedynczy skrajny głos nie przesądza więc o niczym.</p>
+
+      <h3>👥 Kto ocenia</h3>
+      <p>Komisję tworzą kapitanowie wszystkich drużyn. Jeden z nich jest przewodniczącym —
+         odhacza misje, wpisuje wagę i kary. Pozostali kapitanowie głosują na Miss Kapelusza.</p>
+      <p>Kapitan nie ocenia własnej drużyny.</p>
+
+      <h3>⛔ Kary</h3>
+      <ul>
+        <li>Grzyb trujący w koszyku — 15 pkt za sztukę</li>
+        <li>Reklamówka zamiast koszyka — 10 pkt</li>
+        <li>Spóźnienie — 2 pkt za każdą rozpoczętą minutę</li>
+      </ul>
+
+      <h3>🤝 Remis</h3>
+      <p>Rozstrzygamy po kolei, aż pojawi się różnica:</p>
+      <ol>
+        <li>Wyższa ocena za Miss Kapelusza</li>
+        <li>Wcześniejszy powrót na metę</li>
+        <li>Zgadywanie, w której dłoni sędzia trzyma grzyba</li>
+      </ol>
+
+      <h3>🏆 Nagrody</h3>
+      <ul>
+        <li><strong>Złoty Borowik</strong> — najwyższa suma punktów</li>
+        <li><strong>Miss Kapelusza</strong> — najpiękniejszy grzyb dnia</li>
+        <li><strong>Nagroda Puszczy</strong> — najlżejszy koszyk przy komplecie zaliczonych misji</li>
+      </ul>
+    </div>
+
+    <!-- WYNIKI NA ZYWO -->
+    <div id="results" class="tab-panel">
+      <h2>🏆 Wyniki</h2>
+      <div id="publicScoreboard"></div>
+
+      <div class="note-box" style="margin-top:18px">
+        Suma to misje z karty, Miss Kapelusza i waga zbioru (1 kg = 1 pkt), minus kary.
+        Szczegóły w zakładce <strong>⭐ Punktacja</strong>.
+      </div>
+    </div>
+
+    <!-- KARTA MISJI -->
+    <div id="missions" class="tab-panel">
+      <h2>🎯 Karta misji</h2>
+
+      <div class="note-box">
+        Podgląd karty. Zaznaczenia znikają po odświeżeniu i nigdzie się nie zapisują.
+        <br><br>
+        W lesie pracujecie na wydruku, bo nie ma tam zasięgu. Ocenę wpisuje komisja
+        po powrocie.
+      </div>
+
+      <div class="mission-toolbar no-print">
+        <div class="mission-score">
+          Punkty: <span id="missionTotal">0</span> / <span id="missionMax">0</span>
+        </div>
+        <div>
+          <button onclick="printMissionCards()" class="mission-btn primary">🖨️ Drukuj karty dla drużyn</button>
+          <button onclick="resetMissions()" class="mission-btn">↺ Wyczyść</button>
+        </div>
+      </div>
+
+      <div id="missionCard"></div>
+
+      <div class="note-box no-print" style="margin-top:20px">
+        <strong>Dla organizatora:</strong> „Drukuj karty" tworzy jedną stronę A4 na drużynę,
+        z nazwą w nagłówku i miejscem na podpis. Przed losowaniem drukuje sześć pustych kart.
+      </div>
+    </div>
+
+    <!-- REJESTRACJA -->
+    <div id="registration" class="tab-panel active registration">
+      <h2>📝 Rejestracja uczestników</h2>
+      <form id="registrationForm" onsubmit="event.preventDefault(); submitRegistration();">
+        <input type="text" id="name" placeholder="Imię i nazwisko" required />
+        <input type="email" id="email" placeholder="Email" required />
+        <input type="tel" id="phone" placeholder="Telefon" required />
+        <select id="experience" required>
+          <option value="">-- Doświadczenie w grzybobraniu --</option>
+          <option value="Początkujący">Początkujący</option>
+          <option value="Średniozaawansowany">Średniozaawansowany</option>
+          <option value="Ekspert">Ekspert</option>
+        </select>
+        <input type="text" id="diet" placeholder="Dieta / preferencje żywieniowe" />
+        <button type="submit">Zarejestruj się</button>
+      </form>
+      <p>📊 Liczba uczestników: <span id="participantCount">0</span></p>
+    </div>
+
+    <!-- DRUŻYNY -->
+    <div id="teams" class="tab-panel">
+      <h2>👥 Drużyny</h2>
+      <div id="teamsContainer"></div>
+    </div>
+
+    <!-- WYSYLKA ZDJEC -->
+    <div id="photos" class="tab-panel">
+      <h2>📤 Wyślij zdjęcia z misji</h2>
+
+      <div class="note-box">
+        Trzy misje wymagają zdjęcia: muchomor, grzyb na drzewie i zdjęcie drużyny.
+        W lesie po prostu je zróbcie — wyślecie po powrocie, przy ognisku.
+        <br><br>
+        Zdjęcia trafiają prosto do komisji. Zachowują datę i miejsce wykonania.
+      </div>
+
+      <div class="upload-box">
+        <div class="judge-field">
+          <label>Twoja drużyna</label>
+          <select id="photoTeam" onchange="renderMyPhotos()"></select>
+        </div>
+
+        <div class="judge-field">
+          <label>Której misji dotyczy zdjęcie?</label>
+          <select id="photoMission"></select>
+        </div>
+
+        <div class="judge-field">
+          <label>Zdjęcie</label>
+          <input type="file" id="photoFile" accept="image/*">
+          <span class="judge-hint">Zdjęcie zostanie automatycznie zmniejszone przed wysłaniem</span>
+        </div>
+
+        <button class="mission-btn primary" onclick="uploadMissionPhoto()">📤 Wyślij zdjęcie</button>
+        <div id="photoStatus" class="upload-status"></div>
+      </div>
+
+      <h3>Zdjęcia Twojej drużyny</h3>
+      <div id="myPhotos"></div>
+    </div>
+
+    <!-- KOMISJA SEDZIOWSKA -->
+    <div id="judge" class="tab-panel">
+      <h2>⚖️ Komisja sędziowska</h2>
+
+      <div id="judgeLoginBox">
+        <div class="note-box">
+          Zakładka dla kapitanów. Każdy dostał swój kod w mailu z przydziałem drużyny.
+          <br><br>
+          Przewodniczący komisji odhacza misje i wpisuje wagę. Pozostali kapitanowie
+          głosują na Miss Kapelusza. Własnej drużyny nie ocenia nikt — strona ją zablokuje.
+        </div>
+        <button id="judgeLoginBtn" class="mission-btn primary" onclick="toggleJudgeMode()">
+          🔑 Zaloguj się kodem kapitana
+        </button>
+      </div>
+
+      <div id="judgePanel" style="display:none">
+        <button id="judgeLogoutBtn" class="mission-btn" onclick="toggleJudgeMode()"
+                style="float:right">🚪 Wyloguj</button>
+
+        <div id="judgeWhoami" class="judge-whoami"></div>
+
+        <h3>Wybierz drużynę do oceny</h3>
+        <div id="judgeTeamPicker" class="judge-picker"></div>
+
+        <div id="judgeCard"></div>
+
+        <h3 style="margin-top:30px">🏆 Tabela wyników</h3>
+        <div id="scoreboard"></div>
+
+        <button class="mission-btn" onclick="loadScoresFromSheet(); loadMissionPhotos();">
+          ↻ Odśwież dane
+        </button>
+      </div>
+    </div>
+
+    <!-- POGODA -->
+    <div id="weather" class="tab-panel">
+      <h2>🌦️ Pogoda na miejscu</h2>
+      <div class="note-box">
+        Dane ze stacji pogodowej stojącej na działce w Grądach Szlacheckich,
+        czyli w miejscu zbiórki.
+      </div>
+      <div id="weatherPanel"></div>
+    </div>
+
+    <!-- ZESZLY ROK -->
+    <div id="gallery" class="tab-panel">
+      <h2>📸 Tak było w zeszłym roku</h2>
+      <p>I Wielkie Grzybobranie, Grądy Szlacheckie, 5 października 2025.
+         Sześć drużyn, 30 kilogramów grzybów i jedno ognisko do późna.</p>
+
+      <div id="galleryGrid" class="gallery-grid"></div>
+    </div>
+
+    <!-- ADMIN -->
+    <div id="admin" class="tab-panel admin-section" style="display:none;">
+      <h2>🔧 Panel Administratora</h2>
+      <div class="admin-actions">
+        <button onclick="testEmail()" class="admin-btn">📧 Test Emaili</button>
+        <button onclick="createTeams()" class="admin-btn">👥 Utwórz Drużyny</button>
+        <button onclick="sendTeamEmails()" class="admin-btn">📤 Wyślij Emaile z Drużynami</button>
+      </div>
+      <div class="participants-table-container">
+        <h3>👥 Lista Uczestników (Panel Admina)</h3>
+        <table id="participantsTable">
+          <thead>
+            <tr>
+              <th>Imię</th>
+              <th>Email</th>
+              <th>Telefon</th>
+              <th>Doświadczenie</th>
+              <th>Dieta</th>
+              <th>Drużyna</th>
+              <th>Data rejestracji</th>
+              <th>Akcje</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRZYCISK ADMINA -->
+  <button id="adminLoginBtn" onclick="toggleAdminMode()"
+    style="position: fixed; bottom: 20px; right: 20px;
+           background: #2d5016; color: white; border: none;
+           padding: 10px 15px; border-radius: 50px;
+           cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+           z-index: 1000;">
+    🔧 Panel Admina
+  </button>
+
+  <!-- SKRYPTY -->
+
+  <div id="lightbox" onclick="closeLightbox()">
+    <button class="lb-nav lb-prev" onclick="event.stopPropagation(); moveLightbox(-1)">&#10094;</button>
+    <figure onclick="event.stopPropagation()">
+      <img id="lightboxImg" src="" alt="">
+      <figcaption id="lightboxCap"></figcaption>
+    </figure>
+    <button class="lb-nav lb-next" onclick="event.stopPropagation(); moveLightbox(1)">&#10095;</button>
+    <button class="lb-close" onclick="closeLightbox()">&times;</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script>
+    // Funkcja odliczania czasu do zakończenia zapisów
+    function updateCountdown() {
+      // Data zakończenia zapisów - MUSI być zgodna z REGISTRATION_DEADLINE w script.js
+      const deadline = new Date('2026-09-24T23:59:59');
+      const now = new Date();
+      const timeLeft = deadline - now;
+      
+      const countdownElement = document.getElementById('countdown');
+      
+      if (timeLeft > 0) {
+        const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+        
+        countdownElement.innerHTML = `${days} dni, ${hours}h ${minutes}m ${seconds}s`;
+        countdownElement.className = 'countdown-display';
+      } else {
+        countdownElement.innerHTML = '⌛ Zapisy zakończone!';
+        countdownElement.className = 'countdown-expired';
+        
+        // Wyłącz formularz rejestracji po deadline
+        const form = document.getElementById('registrationForm');
+        if (form) {
+          const inputs = form.querySelectorAll('input, select, button');
+          inputs.forEach(input => input.disabled = true);
+          
+          const registrationDiv = document.querySelector('#registration');
+          if (registrationDiv && !registrationDiv.querySelector('.deadline-message')) {
+            const message = document.createElement('div');
+            message.className = 'deadline-message';
+            message.style.cssText = 'background: #ffebee; color: #c62828; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #c62828;';
+            message.innerHTML = '<strong>⚠️ Zapisy zostały zamknięte!</strong><br>Termin rejestracji upłynął 24 września 2026 o 23:59.';
+            registrationDiv.insertBefore(message, form);
+          }
+        }
+      }
+    }
+    
+    // Aktualizuj co sekundę
+    setInterval(updateCountdown, 1000);
+    
+    // Uruchom od razu
+    updateCountdown();
+  </script>
+  <script src="script.js"></script>
+</body>
+</html>
