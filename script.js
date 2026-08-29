@@ -1,3 +1,4 @@
+
 // ========= KONFIGURACJA =========
 const CONFIG = {
   EMAILJS_SERVICE_ID: 'service_kq8zmvw',
@@ -227,9 +228,27 @@ function fetchParticipantsFromSheet() {
 }
 
 // ========= REJESTRACJA UCZESTNIKA - MULTIPLE FALLBACK METHODS =========
+// Blokuje przycisk i pokazuje kręciołek na czas zapisu.
+// Bez tego użytkownik nie wie, czy kliknięcie zadziałało, i klika drugi raz.
+function setRegisterBusy(busy) {
+  const btn = document.getElementById('registerBtn');
+  if (!btn) return;
+  if (busy) {
+    btn.dataset.label = btn.dataset.label || btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Zapisuję...';
+  } else {
+    btn.disabled = false;
+    btn.textContent = btn.dataset.label || 'Zarejestruj się';
+  }
+}
+
 async function submitRegistration() {
   const form = document.getElementById('registrationForm');
   if (!form) return;
+
+  setRegisterBusy(true);
+  try {
 
   const formData = {
     'Imię': document.getElementById('name').value,
@@ -378,6 +397,9 @@ async function submitRegistration() {
   loadParticipants();
 
   showMessage('Rejestracja zapisana lokalnie (problem z połączeniem)', 'warning');
+  } finally {
+    setRegisterBusy(false);
+  }
 }
 
 // ========= JSONP REGISTRATION METHOD =========
@@ -999,32 +1021,39 @@ window.fetchTeamsFromSheet = fetchTeamsFromSheet;
 
 const MISSIONS = [
   { id: 'm1',  cat: 'A', pts: 13, title: 'Borowik szlachetny',
-    desc: 'Wystarczy jedna sztuka w koszu. Król lasu, król punktów.' },
+    desc: 'Wystarczy jedna sztuka w koszu. Król lasu, król punktów.',
+    foto: 'borowik.jpg' },
   { id: 'm2',  cat: 'A', pts: 11, title: 'Kurka',
-    desc: 'Jedna sztuka. Żółta, pachnąca, trudna do pomylenia.' },
+    desc: 'Jedna sztuka. Żółta, pachnąca, trudna do pomylenia.',
+    foto: 'kurka.jpg' },
   { id: 'm3',  cat: 'A', pts: 9,  title: 'Koźlarz',
-    desc: 'Babka lub czerwony — obojętnie który.' },
+    desc: 'Babka lub czerwony — obojętnie który.',
+    foto: 'kozlarz.jpg' },
   { id: 'm4',  cat: 'A', pts: 7,  title: 'Podgrzybek',
-    desc: 'Jedna sztuka. Zwykle najłatwiejsze punkty dnia.' },
+    desc: 'Jedna sztuka. Zwykle najłatwiejsze punkty dnia.',
+    foto: 'podgrzybek.jpg' },
   { id: 'm5',  cat: 'A', pts: 5,  title: 'Maślak',
-    desc: 'Jedna sztuka. Śliski kapelusz zdradza go od razu.' },
+    desc: 'Jedna sztuka. Śliski kapelusz zdradza go od razu.',
+    foto: 'maslak.jpg' },
   { id: 'm6',  cat: 'A', pts: 17, title: 'Pięć różnych gatunków jadalnych',
     desc: 'Najcenniejsza misja dnia. Liczą się gatunki, nie sztuki.' },
 
   { id: 'm7',  cat: 'B', pts: 6,  title: 'Muchomor czerwony — TYLKO zdjęcie',
-    desc: 'Nie zbieramy, nie dotykamy, nie kopiemy. Zdjęcie i idziemy dalej.' },
+    desc: 'Nie zbieramy, nie dotykamy, nie kopiemy. Zdjęcie i idziemy dalej.',
+    foto: 'muchomor.jpg' },
   { id: 'm8',  cat: 'B', pts: 4,  title: 'Grzyb rosnący na drzewie lub pniu',
     desc: 'Huba też się liczy. Zdjęcie wystarczy.' },
   { id: 'm9',  cat: 'B', pts: 3,  title: 'Zdjęcie drużyny w komplecie',
     desc: 'Wszyscy w kadrze, w lesie. Selfie z wyciągniętej ręki jak najbardziej.' },
+  { id: 'm13', cat: 'B', pts: 8,  title: 'Dzikie zwierzę leśne',
+    desc: 'Sarna, dzik, lis, wiewiórka, zając, ptak. Z bezpiecznej odległości — ' +
+          'nie podchodzimy, nie zaganiamy. Rozmazane zdjęcie umykającej sarny też się liczy.' },
 
-  { id: 'm10', cat: 'C', pts: 8,  title: 'Okrzyk drużyny na mecie',
-    desc: 'Wymyślony w lesie, wykrzyczany chórem przy powrocie. Musi paść nazwa drużyny.' },
   { id: 'm11', cat: 'C', pts: 6,  title: 'Cztery skarby lasu',
     desc: 'Żołądź, szyszka, kolorowy liść i piórko. Wszystkie cztery naraz.' },
   { id: 'm12', cat: 'C', pts: 10, title: 'Miss Kapelusza',
-    desc: 'Wystawiacie jednego najładniejszego grzyba. Sędzia daje od 0 do 10 pkt. ' +
-          'To jedyna ocena uznaniowa — i to ona najczęściej rozstrzyga remisy.',
+    desc: 'Wystawiacie jednego najładniejszego grzyba. Każdy kapitan ocenia go od 0 do 10 pkt, ' +
+          'z pominięciem własnej drużyny. To jedyna ocena uznaniowa i najczęściej rozstrzyga remisy.',
     judged: true }
 ];
 
@@ -1035,9 +1064,9 @@ const PENALTIES = [
 ];
 
 const CAT_NAMES = {
-  A: { icon: '🧺', name: 'ŁOWY', hint: 'Sędzia zagląda do koszyka' },
-  B: { icon: '📷', name: 'OKO',  hint: 'Pokazujecie zdjęcie w telefonie' },
-  C: { icon: '🎭', name: 'FANTAZJA', hint: 'Ocenia sędzia na mecie' }
+  A: { icon: '🧺', name: 'ŁOWY', hint: 'Komisja zagląda do koszyka' },
+  B: { icon: '📷', name: 'OKO',  hint: 'Przesyłacie w zakładce „Wyślij zdjęcia”' },
+  C: { icon: '🎭', name: 'FANTAZJA', hint: 'Ocenia komisja sędziowska' }
 };
 
 // Stan zaznaczeń - tylko w pamięci przeglądarki, znika po odświeżeniu.
@@ -1057,6 +1086,13 @@ function missionTotal() {
 
 function missionMax() {
   return MISSIONS.reduce((s, m) => s + m.pts, 0);
+}
+
+// Zdjęcie rozwija się po kliknięciu ikonki, nie po najechaniu myszą.
+// Na telefonie najechania nie ma, a to na telefonach będzie używane najczęściej.
+function toggleMissionFoto(id) {
+  const box = document.getElementById('foto_' + id);
+  if (box) box.style.display = (box.style.display === 'none') ? 'block' : 'none';
 }
 
 function toggleMission(id) {
@@ -1098,7 +1134,7 @@ function renderMissionCard() {
                 <span class="mission-pts">0–${m.pts} pkt</span></div>
               <div class="mission-desc">${m.desc}</div>
               <div class="beauty-picker no-print">
-                <label>Ocena sędziego:</label>
+                <label>Ocena komisji:</label>
                 <select onchange="setBeautyScore(this.value)">
                   ${[0,1,2,3,4,5,6,7,8,9,10].map(n =>
                     `<option value="${n}" ${n === missBeautyScore ? 'selected' : ''}>${n}</option>`).join('')}
@@ -1110,14 +1146,22 @@ function renderMissionCard() {
       } else {
         const on = !!missionState[m.id];
         html += `
-          <div class="mission-row ${on ? 'done' : ''}" onclick="toggleMission('${m.id}')">
-            <div class="mission-check">${on ? '✔' : ''}</div>
-            <div class="mission-body">
+          <div class="mission-row ${on ? 'done' : ''}">
+            <div class="mission-check" onclick="toggleMission('${m.id}')">${on ? '✔' : ''}</div>
+            <div class="mission-body" onclick="toggleMission('${m.id}')">
               <div class="mission-title">${m.title}
                 <span class="mission-pts">${m.pts} pkt</span></div>
               <div class="mission-desc">${m.desc}</div>
             </div>
-          </div>`;
+            ${m.foto ? `<button class="foto-btn" title="Pokaż zdjęcie"
+                 onclick="event.stopPropagation(); toggleMissionFoto('${m.id}')">📷</button>` : ''}
+          </div>
+          ${m.foto ? `<div class="foto-box" id="foto_${m.id}" style="display:none">
+              <img src="zdjecia/grzyby/${m.foto}" alt="${m.title}"
+                   onerror="this.parentNode.innerHTML='<p class=&quot;foto-brak&quot;>Zdjęcie zostanie dodane wkrótce.</p>'">
+              <p class="foto-uwaga">Zdjęcie poglądowe. <strong>Nie służy do rozpoznawania,
+                 czy grzyb jest jadalny</strong> — w razie wątpliwości nie zbieramy.</p>
+            </div>` : ''}`;
       }
     });
 
@@ -1180,7 +1224,7 @@ function printMissionCards() {
         <div class="foot">
           <div>Godzina powrotu: __________</div>
           <div>SUMA PUNKTÓW: __________</div>
-          <div class="sig">Podpis sędziego: ______________________</div>
+          <div class="sig">Podpis przewodniczącego komisji: ______________________</div>
         </div>
       </div>`;
   });
@@ -1316,7 +1360,7 @@ let myBeautyVotes = {};     // {teamId: ocena} - głosy zalogowanego kapitana
 let judgeState = {};      // { teamId: {missions:{}, beauty:0, weight:'', penalties:0, returnTime:''} }
 let missionPhotos = [];   // zdjecia wgrane przez druzyny
 
-const PHOTO_MISSIONS = ['m7', 'm8', 'm9'];   // misje wymagajace zdjecia
+const PHOTO_MISSIONS = ['m7', 'm8', 'm9', 'm13'];   // misje wymagajace zdjecia
 
 // Kod druzyny podany na czas sesji. Znika po odswiezeniu strony.
 let photoTeamCode = '';
@@ -2762,3 +2806,4 @@ function ocenZdjecie(exif) {
 window.loginTeamForPhotos = loginTeamForPhotos;
 window.logoutTeamPhotos = logoutTeamPhotos;
 window.updateMissionsTabVisibility = updateMissionsTabVisibility;
+window.toggleMissionFoto = toggleMissionFoto;
