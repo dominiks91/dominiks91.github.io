@@ -68,6 +68,24 @@ function formatDate(date) {
 }
 
 // ========= NAWIGACJA =========
+
+// Karta misji jest ukryta do czasu losowania drużyn.
+// Wcześniej nikomu nie jest potrzebna, a podglądanie zadań przed startem
+// psułoby zabawę.
+function updateMissionsTabVisibility() {
+  const btn = document.getElementById('missionsTabBtn');
+  if (!btn) return;
+
+  const widoczna = teams.length > 0;
+  btn.style.display = widoczna ? '' : 'none';
+
+  // Gdyby ktoś siedział na tej zakładce, gdy drużyny zniknęły
+  if (!widoczna) {
+    const panel = document.getElementById('missions');
+    if (panel && panel.classList.contains('active')) showTab('registration');
+  }
+}
+
 function showTab(tabId) {
   try {
     if (tabId === 'results') startPublicScores();
@@ -797,6 +815,7 @@ function displayTeams() {
   if (teams.length === 0) {
     container.innerHTML += '<p>Drużyny nie zostały jeszcze utworzone.</p>';
     try { renderPhotoUploadForm(); } catch (e) {}
+    try { updateMissionsTabVisibility(); } catch (e) {}
     return;
   }
 
@@ -820,6 +839,7 @@ function displayTeams() {
 
   // Odśwież listy zależne od drużyn
   try { renderPhotoUploadForm(); } catch (e) {}
+  try { updateMissionsTabVisibility(); } catch (e) {}
   try { if (isJudgeMode) renderJudgeTeamPicker(); } catch (e) {}
 }
 
@@ -839,6 +859,17 @@ async function sendTeamEmails() {
     }
   } catch (e) {
     showMessage('Nie udało się pobrać kodów kapitanów — maile pójdą bez nich.', 'warning');
+  }
+
+  // Kody drużyn - do wysyłania zdjęć. Dostają je wszyscy członkowie.
+  let kodyDruzyn = {};
+  try {
+    const dane = await jsonpRequest('getTeamCodes', { token: adminToken });
+    if (Array.isArray(dane)) {
+      dane.forEach(d => { kodyDruzyn[String(d.teamId)] = d.teamCode; });
+    }
+  } catch (e) {
+    showMessage('Nie udało się pobrać kodów drużyn — maile pójdą bez nich.', 'warning');
   }
 
   for (const team of teams) {
@@ -861,7 +892,9 @@ async function sendTeamEmails() {
         meeting_point: CONFIG.MEETING_POINT_TEXT,
         // Puste dla zwyklych czlonkow - w szablonie linia po prostu zniknie
         captain_role: jestKapitanem ? 'Jesteś KAPITANEM tej drużyny.' : '',
-        captain_code: jestKapitanem ? kod : ''
+        captain_code: jestKapitanem ? kod : '',
+        // Kod drużyny dostają WSZYSCY - służy do wysyłania zdjęć z misji
+        team_code: kodyDruzyn[String(team.id)] || ''
       };
       try {
         await emailjs.send(CONFIG.EMAILJS_SERVICE_ID, CONFIG.EMAILJS_TEMPLATE_ID, emailParams);
@@ -932,6 +965,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderMissionCard();
   renderGallery();
   renderPhotoUploadForm();
+  updateMissionsTabVisibility();
   loadMissionPhotos();
   loadWeather();
 
@@ -1283,6 +1317,11 @@ let judgeState = {};      // { teamId: {missions:{}, beauty:0, weight:'', penalt
 let missionPhotos = [];   // zdjecia wgrane przez druzyny
 
 const PHOTO_MISSIONS = ['m7', 'm8', 'm9'];   // misje wymagajace zdjecia
+
+// Kod druzyny podany na czas sesji. Znika po odswiezeniu strony.
+let photoTeamCode = '';
+let photoTeamId = null;
+let photoTeamName = '';
 
 function judgeStateFor(teamId) {
   if (!judgeState[teamId]) {
@@ -1745,19 +1784,58 @@ function renderScoreboard() {
 // ================= WYSYLKA ZDJEC PRZEZ DRUZYNY =================
 
 function renderPhotoUploadForm() {
-  const sel = document.getElementById('photoTeam');
-  if (!sel) return;
-
-  sel.innerHTML = teams.length
-    ? teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('')
-    : '<option value="">— drużyny nie są jeszcze wylosowane —</option>';
-
   const misjaSel = document.getElementById('photoMission');
   if (misjaSel) {
     misjaSel.innerHTML = MISSIONS
       .filter(m => PHOTO_MISSIONS.indexOf(m.id) !== -1)
       .map(m => `<option value="${m.id}">${m.title}</option>`).join('');
   }
+
+  const loginBox = document.getElementById('photoLoginBox');
+  const uploadBox = document.getElementById('photoUploadBox');
+  if (!loginBox || !uploadBox) return;
+
+  if (photoTeamId) {
+    loginBox.style.display = 'none';
+    uploadBox.style.display = 'block';
+    const nazwa = document.getElementById('photoTeamName');
+    if (nazwa) nazwa.textContent = '🧺 ' + photoTeamName;
+  } else {
+    loginBox.style.display = 'block';
+    uploadBox.style.display = 'none';
+  }
+
+  renderMyPhotos();
+}
+
+function loginTeamForPhotos() {
+  askPassword('📤 Kod drużyny', 'np. DK7MQ4',
+              { hint: 'Sześcioznakowy kod z maila z przydziałem drużyny. Ma go każdy w drużynie.' })
+    .then(kod => {
+      if (!kod) return;
+      showMessage('Sprawdzam kod...', 'info');
+
+      jsonpRequest('teamLogin', { token: kod.trim().toUpperCase() })
+        .then(res => {
+          if (res && res.authorized) {
+            photoTeamCode = kod.trim().toUpperCase();
+            photoTeamId = res.teamId;
+            photoTeamName = res.teamName;
+            renderPhotoUploadForm();
+            showMessage(`Drużyna ${res.teamName} — możesz wysyłać zdjęcia`, 'success');
+          } else {
+            showMessage('Nieprawidłowy kod drużyny!', 'error');
+          }
+        })
+        .catch(() => showMessage('Brak połączenia z arkuszem.', 'error'));
+    });
+}
+
+function logoutTeamPhotos() {
+  photoTeamCode = '';
+  photoTeamId = null;
+  photoTeamName = '';
+  renderPhotoUploadForm();
 }
 
 // Zmniejsza zdjecie przed wyslaniem - inaczej 5 MB z telefonu zapcha lacze
@@ -1784,14 +1862,12 @@ function resizeImage(file, maxWidth) {
 
 function uploadMissionPhoto() {
   const plik = document.getElementById('photoFile').files[0];
-  const teamId = document.getElementById('photoTeam').value;
   const missionId = document.getElementById('photoMission').value;
   const status = document.getElementById('photoStatus');
 
+  if (!photoTeamCode) { showMessage('Najpierw podaj kod drużyny.', 'error'); return; }
   if (!plik) { showMessage('Najpierw wybierz zdjęcie.', 'error'); return; }
-  if (!teamId) { showMessage('Wybierz drużynę.', 'error'); return; }
 
-  const team = teams.find(t => String(t.id) === String(teamId));
   status.textContent = 'Odczytuję dane zdjęcia...';
 
   let exifDane = null;
@@ -1815,8 +1891,7 @@ function uploadMissionPhoto() {
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
           action: 'uploadPhoto',
-          teamId: teamId,
-          teamName: team ? team.name : '',
+          teamCode: photoTeamCode,     // drużynę ustala serwer z kodu
           missionId: missionId,
           mimeType: 'image/jpeg',
           base64: dataUrl,
@@ -1826,7 +1901,7 @@ function uploadMissionPhoto() {
     })
     .then(() => {
       status.textContent = '';
-      showMessage('Zdjęcie wysłane! Sprawdzam...', 'success');
+      showMessage('Zdjęcie wysłane. Sprawdzam...', 'success');
       document.getElementById('photoFile').value = '';
       setTimeout(loadMissionPhotos, 3000);
     })
@@ -1851,8 +1926,8 @@ function loadMissionPhotos() {
 function renderMyPhotos() {
   const box = document.getElementById('myPhotos');
   if (!box) return;
-  const teamId = document.getElementById('photoTeam') ? document.getElementById('photoTeam').value : '';
-  const moje = missionPhotos.filter(p => String(p.teamId) === String(teamId));
+  if (!photoTeamId) { box.innerHTML = ''; return; }
+  const moje = missionPhotos.filter(p => String(p.teamId) === String(photoTeamId));
 
   box.innerHTML = moje.length
     ? `<p class="photo-count">Wysłane zdjęcia tej drużyny: <b>${moje.length}</b></p>
@@ -2684,3 +2759,6 @@ function ocenZdjecie(exif) {
 
   return flagi;
 }
+window.loginTeamForPhotos = loginTeamForPhotos;
+window.logoutTeamPhotos = logoutTeamPhotos;
+window.updateMissionsTabVisibility = updateMissionsTabVisibility;
