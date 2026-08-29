@@ -7,7 +7,7 @@ const CONFIG = {
   // Hasła admina NIE MA w tym pliku - siedzi w Apps Script (Wlasciwosci skryptu).
   // Patrz instrukcja, Etap 1.6.
   REGISTRATION_DEADLINE: new Date('2026-09-24T23:59:59'),
-  MAX_PARTICIPANTS: 30,
+  MAX_PARTICIPANTS: 40,
   EVENT_DATE_TEXT: '3 października 2026',
   EVENT_DATE_ISO: '2026-10-03',        // do sprawdzania daty zdjec
   // Wspolrzedne miejsca zbiorki - do sprawdzania GPS na zdjeciach.
