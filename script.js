@@ -2207,6 +2207,8 @@ function renderWeather(d) {
       const c = d.current;
 
       html += `
+        <h3>🌡️ Aktualna pogoda</h3>
+        <p class="weather-sub">Odczyt ze stacji na miejscu zbiórki, stan na teraz.</p>
         <div class="weather-now">
           <div class="wn-main">
             <div class="wn-icon">${weatherIcon(c.icon)}</div>
@@ -2378,6 +2380,7 @@ function renderWeather(d) {
     if (Array.isArray(d.forecast) && d.forecast.length) {
       html += `
         <h3>🔮 Prognoza</h3>
+        <p class="weather-sub">Wynik autorskiego modelu prognozy pogody, liczonego dla tej lokalizacji.</p>
         <div class="forecast-row">`;
 
       d.forecast.forEach(f => {
