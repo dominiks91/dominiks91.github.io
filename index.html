@@ -134,6 +134,16 @@
 
 
 
+
+    /* ===== PRZYCISK W TRAKCIE ZAPISU ===== */
+    #registerBtn:disabled { opacity:.75; cursor:progress; }
+    .spinner {
+      display:inline-block; width:15px; height:15px; margin-right:9px;
+      border:2px solid rgba(255,255,255,.35); border-top-color:#fff;
+      border-radius:50%; animation:spin .7s linear infinite; vertical-align:-2px;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
     /* ===== OKIENKO NA HASLO ===== */
     #pwOverlay {
       position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:10001;
@@ -207,6 +217,23 @@
     .pc-brak { background:#f0f0f0; color:#888; }
     .pc-info { background:#eef3f8; color:#4a6b8a; }
     @media (max-width:600px) { .photo-check { padding-left:14px; } }
+
+
+    /* ===== ZDJECIE PRZY MISJI ===== */
+    .foto-btn {
+      flex-shrink:0; background:#f1f7ea; border:1px solid #b8c9a8; border-radius:7px;
+      width:42px; height:42px; font-size:1.15em; cursor:pointer; align-self:center;
+    }
+    .foto-btn:hover { background:#e3f0d6; }
+    .foto-box {
+      background:#f7faf3; border-bottom:1px solid #e4e4e4; padding:12px 14px;
+    }
+    .foto-box img {
+      width:100%; max-width:340px; border-radius:8px; display:block;
+      box-shadow:0 2px 6px rgba(0,0,0,.15);
+    }
+    .foto-uwaga { font-size:.78em; color:#8a6d1f; margin:8px 0 0; line-height:1.45; max-width:340px; }
+    .foto-brak { font-size:.85em; color:#999; margin:0; font-style:italic; }
 
     /* ===== GLOSOWANIE MISS KAPELUSZA ===== */
     .vote-box { margin-top:11px; background:#f7faf3; border-radius:7px; padding:11px; }
@@ -636,7 +663,7 @@
       <ul>
         <li>Koszyk wiklinowy lub z naturalnych materiałów. Reklamówka to −10 punktów.</li>
         <li>Nóż do grzybów.</li>
-        <li>Naładowany telefon — trzy misje wymagają zdjęcia.</li>
+        <li>Naładowany telefon — cztery misje wymagają zdjęcia.</li>
         <li>Zdjęcia wysyła ze strony ta osoba, która je zrobiła — potrzebny jest kod drużyny
             z maila z przydziałem. Nie przesyłajcie ich sobie komunikatorem, bo tracą
             datę i lokalizację.</li>
@@ -681,9 +708,9 @@
       <p>Każda drużyna dostaje na starcie tę samą kartę z dwunastoma zadaniami.
          Odhaczacie je w lesie, komisja weryfikuje po powrocie.</p>
       <ul>
-        <li><strong>Łowy</strong> — pokazujecie grzyba w koszyku</li>
-        <li><strong>Oko</strong> — wysyłacie zdjęcie przez zakładkę „Wyślij zdjęcia"</li>
-        <li><strong>Fantazja</strong> — okrzyk, skarby lasu, Miss Kapelusza</li>
+        <li><strong>Łowy</strong> — komisja zagląda do koszyka</li>
+        <li><strong>Oko</strong> — przesyłacie zdjęcie w zakładce „Wyślij zdjęcia"</li>
+        <li><strong>Fantazja</strong> — skarby lasu i Miss Kapelusza, ocenia komisja</li>
       </ul>
       <p>Z samych misji można zebrać do 99 punktów, więc ważą one więcej niż waga koszyka.
          Pełna lista jest w zakładce <strong>🎯 Karta misji</strong>.</p>
@@ -776,7 +803,7 @@
           <option value="Ekspert">Ekspert</option>
         </select>
         <input type="text" id="diet" placeholder="Dieta / preferencje żywieniowe" />
-        <button type="submit">Zarejestruj się</button>
+        <button type="submit" id="registerBtn">Zarejestruj się</button>
       </form>
       <p>📊 Liczba uczestników: <span id="participantCount">0</span></p>
     </div>
@@ -792,7 +819,7 @@
       <h2>📤 Wyślij zdjęcia z misji</h2>
 
       <div class="note-box">
-        Trzy misje wymagają zdjęcia: muchomor, grzyb na drzewie i zdjęcie drużyny.
+        Cztery misje wymagają zdjęcia: muchomor, grzyb na drzewie, zdjęcie drużyny i dzikie zwierzę.
         W lesie po prostu je zróbcie — wyślecie po powrocie, przy ognisku.
         <br><br>
         Do wysłania potrzebny jest <strong>kod drużyny</strong> z maila z przydziałem.
