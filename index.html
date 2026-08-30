@@ -266,8 +266,22 @@
       border-radius:6px; cursor:pointer; font-weight:bold; color:#2d5016; font-size:.95em;
     }
     .vote-btn:hover { background:#eaf5e0; }
-    .vote-btn.picked { background:#2d5016; color:#fff; border-color:#2d5016; }
+    .vote-btn.picked { background:#2d5016; color:#fff; border-color:#2d5016;
+                       box-shadow:0 0 0 2px #a4c98a; }
+    .vote-btn[disabled] { opacity:.45; cursor:not-allowed; }
+    .vote-box.busy { opacity:.8; }
     .vote-status { font-size:.83em; color:#666; margin-top:8px; line-height:1.45; }
+
+    /* Stan zapisu glosu - kapitan musi widziec CZARNO NA BIALYM, czy sie zapisalo */
+    .vote-state { margin-top:9px; font-size:.9em; font-weight:600; line-height:1.45; }
+    .vs-saving { color:#b26a00; }
+    .vs-saved  { color:#1b7a2f; }
+    .vs-error  { color:#c62828; }
+    .vs-none   { color:#777; font-weight:normal; }
+
+    .warn-inline { color:#c62828; font-weight:bold; }
+    .pr-pending { color:#b26a00; font-style:italic; }
+    .results-updated { text-align:center; font-size:.82em; color:#888; margin-top:6px; }
     .vote-trim { color:#999; font-style:italic; }
 
     @media (max-width:600px) {
