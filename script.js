@@ -2210,7 +2210,7 @@ function renderWeather(d) {
 
       html += `
         <h3>🌡️ Aktualna pogoda</h3>
-        <p class="weather-sub">Odczyt ze stacji na miejscu zbiórki, stan na teraz.</p>
+        <p class="weather-sub">Aktualny odczyt ze stacji pogodowej na miejscu zbiórki.</p>
         <div class="weather-now">
           <div class="wn-main">
             <div class="wn-icon">${weatherIcon(c.icon)}</div>
