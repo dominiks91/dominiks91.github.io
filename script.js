@@ -875,12 +875,17 @@ async function sendTeamEmails() {
   // Kody kapitanów są w arkuszu - pobieramy je przed wysyłką
   let kody = {};
   let przewodniczacyTeam = '';
+  let przewodniczacyImie = '';
   try {
     const dane = await jsonpRequest('getCaptainCodes', { token: adminToken });
     if (Array.isArray(dane)) {
       dane.forEach(d => {
         kody[String(d.teamId)] = d;
-        if (d.isChairman) przewodniczacyTeam = d.teamName;
+        if (d.isChairman) {
+          przewodniczacyTeam = d.teamName;
+          const lider = participants.find(p => String(p.id) === String(d.leaderId));
+          przewodniczacyImie = lider ? lider.name : '';
+        }
       });
     }
   } catch (e) {
@@ -936,11 +941,21 @@ async function sendTeamEmails() {
         captain_code: jestKapitanem ? kod : '',
         // Kod drużyny dostają WSZYSCY - służy do wysyłania zdjęć z misji
         team_code: kodyDruzyn[String(team.id)] || '',
-        // Kto przewodniczy komisji - inaczej kapitanowie się tego nie dowiedzą
-        chairman_role: jestPrzewodniczacym
-          ? 'Jesteś PRZEWODNICZĄCYM KOMISJI. To Ty odhaczasz misje, wpisujesz wagę i kary oraz zapisujesz wyniki wszystkich drużyn.'
-          : '',
-        chairman_team: przewodniczacyTeam
+
+        // Przełączniki dla bloków warunkowych w szablonie EmailJS.
+        // Pusty ciąg = sekcja {{#...}} się NIE wyrenderuje, więc zwykły
+        // członek nie dostaje pustej ramki po kodzie kapitana.
+        is_captain: jestKapitanem ? '1' : '',
+        is_chairman: jestPrzewodniczacym ? '1' : '',
+
+        // Kto przewodniczy komisji - żeby wiedzieli wszyscy, nie tylko on sam
+        chairman_name: przewodniczacyImie,
+        chairman_team: przewodniczacyTeam,
+        // Kapitan własnej drużyny - dla zwykłych członków
+        team_captain_name: (() => {
+          const l = participants.find(p => String(p.id) === String(team.leader));
+          return l ? l.name : '';
+        })()
       };
       try {
         await emailjs.send(CONFIG.EMAILJS_SERVICE_ID, CONFIG.EMAILJS_TEMPLATE_ID, emailParams);
