@@ -21,7 +21,7 @@ const CONFIG = {
   // sie nie wyswietla, np. 'https://grzybobranie.pages.dev/'  (ze slashem na koncu!)
   SITE_URL_OVERRIDE: '',
   // <-- WKLEJ TU NOWY URL /exec z tegorocznego wdrożenia Apps Script
-  WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbxUJLJjD3mUqRIOMwY-TbAovJAfvGQ6OkOGPnl9V_7qaaIAi_6P-SAYJi0dKA3B4icHjQ/exec'
+  WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbxo6Jv8K3NZkaD5gN0HIJaYo5GHd548UvOns_J_mR8CJzOk8JesuGlf2C_R0aanOUQ9KA/exec'
 };
 
 // ===== ZDJECIA Z ZESZLEGO ROKU =====
@@ -90,6 +90,7 @@ function showTab(tabId) {
   try {
     if (tabId === 'results') startPublicScores();
     else stopPublicScores();
+    if (tabId === 'photos' || tabId === 'judge') loadMissionPhotos();
   } catch (e) {}
 
   document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
@@ -867,6 +868,10 @@ function displayTeams() {
 
 // ========= EMAIL =========
 async function sendTeamEmails() {
+  if (typeof emailjs === 'undefined' || !emailjs.send) {
+    showMessage('EmailJS nie został prawidłowo załadowany.', 'error');
+    return;
+  }
   if (teams.length === 0) {
     showMessage('Najpierw utwórz drużyny!', 'error');
     return;
@@ -916,6 +921,9 @@ async function sendTeamEmails() {
     return;
   }
 
+  let wyslane = 0;
+  const bledy = [];
+
   for (const team of teams) {
     for (const memberId of team.members) {
       const participant = participants.find(p => String(p.id) === String(memberId));
@@ -939,32 +947,39 @@ async function sendTeamEmails() {
         // Kod drużyny dostają WSZYSCY - służy do wysyłania zdjęć z misji
         team_code: kodyDruzyn[String(team.id)] || '',
 
-        // Cały blok o roli w komisji budujemy TUTAJ, nie w szablonie.
-        // Powód: EmailJS odrzucał szablon z sekcjami warunkowymi
-        // ("One or more dynamic variables are corrupted"). Gotowy HTML
-        // wstawiamy przez potrójne nawiasy, więc w szablonie nie ma
-        // żadnej składni poza zwykłymi nazwami zmiennych.
-        role_block: budujBlokRoli({
-          jestKapitanem: jestKapitanem,
-          jestPrzewodniczacym: jestPrzewodniczacym,
-          kodKapitana: kod,
-          chairmanName: przewodniczacyImie,
-          chairmanTeam: przewodniczacyTeam,
-          teamCaptainName: (() => {
-            const l = participants.find(p => String(p.id) === String(team.leader));
-            return l ? l.name : '';
-          })()
-        })
+        // Tylko zwykłe zmienne tekstowe. Szablon EmailJS nie zawiera
+        // sekcji warunkowych ani HTML przekazywanego w zmiennej, dzięki czemu
+        // nie zgłasza błędu "dynamic variables are corrupted".
+        role_title: jestPrzewodniczacym
+          ? 'Prowadzisz komisję sędziowską'
+          : (jestKapitanem ? 'Reprezentujesz drużynę w komisji' : 'Informacja o komisji'),
+        role_label: jestKapitanem ? 'Kod do panelu komisji' : 'Waszą drużynę reprezentuje',
+        role_value: jestKapitanem ? kod : (() => {
+          const l = participants.find(p => String(p.id) === String(team.leader));
+          return l ? l.name : '';
+        })(),
+        role_description: jestPrzewodniczacym
+          ? 'Odhaczasz misje, wpisujesz wagę, kary i godzinę powrotu dla wszystkich drużyn, także własnej. Na Miss Kapelusza głosujesz tylko dla pozostałych drużyn.'
+          : (jestKapitanem
+              ? `Głosujesz na Miss Kapelusza pozostałych drużyn. Komisję prowadzi ${przewodniczacyImie} z drużyny ${przewodniczacyTeam}.`
+              : `Komisję prowadzi ${przewodniczacyImie} z drużyny ${przewodniczacyTeam}. Zdjęcia z misji może wysłać dowolna osoba z drużyny.`)
       };
       try {
         await emailjs.send(CONFIG.EMAILJS_SERVICE_ID, CONFIG.EMAILJS_TEMPLATE_ID, emailParams);
+        wyslane++;
         await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (error) {
         console.error('Błąd wysyłania email do:', participant.email, error);
+        bledy.push(participant.email);
       }
     }
   }
-  showMessage('Wysłano emaile do uczestników!', 'success');
+
+  if (bledy.length) {
+    showMessage(`Wysłano ${wyslane} wiadomości. Błędy: ${bledy.length}. Sprawdź konsolę.`, 'warning');
+  } else {
+    showMessage(`Wysłano ${wyslane} wiadomości do uczestników!`, 'success');
+  }
 }
 
 // ========= BLOK O ROLI W KOMISJI (do maila) =========
@@ -1527,8 +1542,8 @@ function toggleJudgeMode() {
           } else if (judgeIsChairman) {
             kto.innerHTML = `👤 <b>${judgeName}</b> · drużyna <b>${res.teamName}</b>
               <br>🎖️ <b>Przewodniczący komisji</b> — odhaczasz misje, wpisujesz wagę i kary
-              dla wszystkich drużyn oraz głosujesz na Miss Kapelusza.
-              <br>Własnej drużyny nie oceniasz.`;
+              dla wszystkich drużyn, także własnej. Na Miss Kapelusza głosujesz dla pozostałych drużyn.
+              <br>Nie głosujesz wyłącznie na Miss Kapelusza własnej drużyny.`;
           } else {
             const kimJest = res.chairmanTeam
               ? `Przewodniczy kapitan drużyny <b>${res.chairmanTeam}</b>.`
@@ -1569,7 +1584,7 @@ function renderJudgeTeamPicker() {
 
   box.innerHTML = teams.map(t => {
     const zapisany = savedScores.some(s => String(s['ID drużyny']) === String(t.id));
-    const wlasna = !judgeIsAdmin && String(t.id) === String(judgeOwnTeam);
+    const wlasna = !judgeIsAdmin && !judgeIsChairman && String(t.id) === String(judgeOwnTeam);
 
     if (wlasna) {
       return `<button class="judge-team-btn own" disabled
@@ -1587,8 +1602,8 @@ function renderJudgeTeamPicker() {
 }
 
 function selectJudgedTeam(teamId) {
-  if (!judgeIsAdmin && String(teamId) === String(judgeOwnTeam)) {
-    showMessage('Własnej drużyny nie oceniasz — poproś innego kapitana.', 'error');
+  if (!judgeIsAdmin && !judgeIsChairman && String(teamId) === String(judgeOwnTeam)) {
+    showMessage('Własnej drużyny nie oceniasz.', 'error');
     return;
   }
   currentJudgedTeam = teamId;
@@ -1824,6 +1839,22 @@ function slowoGlos(n) {
 // Wcześniej ten sam HTML był w dwóch kopiach i rozjeżdżał się przy poprawkach.
 function voteBoxHtml(team) {
   const key = String(team.id);
+  const ownTeam = !judgeIsAdmin && String(team.id) === String(judgeOwnTeam);
+
+  if (ownTeam) {
+    const sum = beautySummary[key] || { value: 0, votes: 0, trimmed: false };
+    return `
+      <div class="vote-box">
+        <div class="vote-label">Miss Kapelusza</div>
+        <div class="vote-state"><span class="vs-none">🔒 Nie głosujesz na Miss Kapelusza własnej drużyny.</span></div>
+        <div class="vote-status">
+          ${sum.votes
+            ? `Pozostali kapitanowie oddali <b>${sum.votes}</b> ${slowoGlos(sum.votes)} · wynik: <b>${sum.value}</b> pkt
+               ${sum.trimmed ? '<span class="vote-trim">(średnia bez skrajnych ocen)</span>' : ''}`
+            : 'Pozostali kapitanowie nie oddali jeszcze głosów.'}
+        </div>
+      </div>`;
+  }
   const mojGlos = myBeautyVotes[key];
   const st = voteStatus[key] || {};
   const sum = beautySummary[key] || { value: 0, votes: 0, trimmed: false };
@@ -1888,7 +1919,7 @@ function updateJudgeSummary(teamId) {
 // ---------- ZAPIS ----------
 
 function saveJudgeScore(teamId) {
-  if (!judgeIsAdmin && String(teamId) === String(judgeOwnTeam)) {
+  if (!judgeIsAdmin && !judgeIsChairman && String(teamId) === String(judgeOwnTeam)) {
     showMessage('Nie możesz zapisać wyniku własnej drużyny.', 'error');
     return;
   }
@@ -2071,57 +2102,127 @@ function resizeImage(file, maxWidth) {
   });
 }
 
-function uploadMissionPhoto() {
-  const plik = document.getElementById('photoFile').files[0];
-  const missionId = document.getElementById('photoMission').value;
+function postPhotoByForm(payload) {
+  return new Promise((resolve, reject) => {
+    const iframeName = 'photoUploadFrame_' + Date.now();
+    const iframe = document.createElement('iframe');
+    iframe.name = iframeName;
+    iframe.style.display = 'none';
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = CONFIG.WEB_APP_URL;
+    form.target = iframeName;
+    form.style.display = 'none';
+
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'payload';
+    input.value = JSON.stringify(payload);
+    form.appendChild(input);
+
+    let submitted = false;
+    let finished = false;
+
+    function cleanup() {
+      setTimeout(() => {
+        if (form.parentNode) form.remove();
+        if (iframe.parentNode) iframe.remove();
+      }, 1000);
+    }
+
+    iframe.onload = () => {
+      if (!submitted || finished) return;
+      finished = true;
+      cleanup();
+      resolve();
+    };
+
+    document.body.appendChild(iframe);
+    document.body.appendChild(form);
+    submitted = true;
+    form.submit();
+
+    setTimeout(() => {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      resolve();
+    }, 12000);
+  });
+}
+
+function waitForUploadedPhoto(teamId, missionId, previousFileId, attempt = 1) {
   const status = document.getElementById('photoStatus');
 
-  if (!photoTeamCode) { showMessage('Najpierw podaj kod drużyny.', 'error'); return; }
-  if (!plik) { showMessage('Najpierw wybierz zdjęcie.', 'error'); return; }
+  return jsonpRequest('getPhotos', { _: Date.now() })
+    .then(data => {
+      if (!Array.isArray(data)) throw new Error((data && data.error) || 'Brak listy zdjęć');
 
-  status.textContent = 'Odczytuję dane zdjęcia...';
+      missionPhotos = data;
+      renderMyPhotos();
+      if (isJudgeMode && currentJudgedTeam !== null) renderJudgeCard();
 
-  let exifDane = null;
+      const found = data.find(p =>
+        String(p.teamId) === String(teamId) &&
+        String(p.missionId) === String(missionId) &&
+        String(p.fileId) !== String(previousFileId || '')
+      );
 
-  // NAJPIERW EXIF z oryginalu - skalowanie przez canvas go kasuje
-  readExif(plik)
-    .then(exif => {
-      exifDane = exif;
-      status.textContent = 'Przygotowuję zdjęcie...';
-      return resizeImage(plik, 1400);
-    })
-    .then(dataUrl => {
-      status.textContent = 'Wysyłam... (przy słabym zasięgu może chwilę potrwać)';
+      if (found) return found;
+      if (attempt >= 10) throw new Error('Serwer nie potwierdził zapisu zdjęcia.');
 
-      // POST, bo zdjecie nie zmiesci sie w adresie GET.
-      // no-cors: przegladarka nie pokaze odpowiedzi, wiec potwierdzenie
-      // bierzemy z ponownego pobrania listy zdjec.
-      return fetch(CONFIG.WEB_APP_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'uploadPhoto',
-          teamCode: photoTeamCode,     // drużynę ustala serwer z kodu
-          missionId: missionId,
-          mimeType: 'image/jpeg',
-          base64: dataUrl,
-          exif: exifDane || {}
-        })
-      });
-    })
-    .then(() => {
-      status.textContent = '';
-      showMessage('Zdjęcie wysłane. Sprawdzam...', 'success');
-      document.getElementById('photoFile').value = '';
-      setTimeout(loadMissionPhotos, 3000);
-    })
-    .catch(err => {
-      status.textContent = '';
-      showMessage('Nie udało się wysłać: ' + err.message, 'error');
+      if (status) status.textContent = `Zdjęcie wysłane. Czekam na zapis, próba ${attempt}/10...`;
+      return new Promise(resolve => setTimeout(resolve, 2000))
+        .then(() => waitForUploadedPhoto(teamId, missionId, previousFileId, attempt + 1));
     });
 }
 
+async function uploadMissionPhoto() {
+  const fileInput = document.getElementById('photoFile');
+  const missionSelect = document.getElementById('photoMission');
+  const status = document.getElementById('photoStatus');
+  const plik = fileInput && fileInput.files ? fileInput.files[0] : null;
+  const missionId = missionSelect ? missionSelect.value : '';
+
+  if (!photoTeamCode || !photoTeamId) { showMessage('Najpierw podaj kod drużyny.', 'error'); return; }
+  if (PHOTO_MISSIONS.indexOf(missionId) === -1) { showMessage('Wybierz prawidłową misję.', 'error'); return; }
+  if (!plik) { showMessage('Najpierw wybierz zdjęcie.', 'error'); return; }
+  if (!plik.type || plik.type.indexOf('image/') !== 0) { showMessage('Wybrany plik nie jest zdjęciem.', 'error'); return; }
+
+  const previous = missionPhotos.find(p =>
+    String(p.teamId) === String(photoTeamId) && String(p.missionId) === String(missionId)
+  );
+
+  try {
+    status.textContent = 'Odczytuję dane zdjęcia...';
+    const exifDane = await readExif(plik);
+
+    status.textContent = 'Zmniejszam zdjęcie...';
+    const dataUrl = await resizeImage(plik, 1200);
+
+    status.textContent = 'Wysyłam zdjęcie...';
+    await postPhotoByForm({
+      action: 'uploadPhoto',
+      teamCode: photoTeamCode,
+      missionId: missionId,
+      mimeType: 'image/jpeg',
+      base64: dataUrl,
+      exif: exifDane || {}
+    });
+
+    status.textContent = 'Zdjęcie przesłane. Czekam na potwierdzenie zapisu...';
+    await waitForUploadedPhoto(photoTeamId, missionId, previous ? previous.fileId : '');
+
+    fileInput.value = '';
+    status.textContent = '✅ Zdjęcie zapisane i widoczne poniżej.';
+    showMessage('Zdjęcie zostało zapisane.', 'success');
+  } catch (err) {
+    console.error('Błąd wysyłania zdjęcia:', err);
+    status.textContent = '❌ ' + err.message;
+    showMessage('Nie udało się zapisać zdjęcia.', 'error');
+  }
+}
 function loadMissionPhotos() {
   jsonpRequest('getPhotos', {})
     .then(data => {
