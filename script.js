@@ -630,6 +630,7 @@ function toggleAdminMode() {
           document.getElementById('admin').style.display = 'block';
           document.getElementById('adminLoginBtn').textContent = '🚪 Wyloguj Admin';
           fetchAdminParticipants();
+          renderReturnTimeStatus();
           showMessage('Zalogowano jako administrator', 'success');
         } else {
           showMessage('Nieprawidłowe hasło!', 'error');
@@ -988,6 +989,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderPhotoUploadForm();
   updateMissionsTabVisibility();
   loadMissionPhotos();
+  loadEventSettings();
   loadWeather();
 
   // Spróbuj pobrać aktualne dane z Google Sheets
@@ -2809,3 +2811,90 @@ window.loginTeamForPhotos = loginTeamForPhotos;
 window.logoutTeamPhotos = logoutTeamPhotos;
 window.updateMissionsTabVisibility = updateMissionsTabVisibility;
 window.toggleMissionFoto = toggleMissionFoto;
+
+// ================= GODZINA POWROTU =================
+// Organizator ustawia ją w panelu admina, a licznik na stronie głównej
+// przełącza się z odliczania do zamknięcia zapisów na odliczanie do powrotu.
+// Wartość trzyma Apps Script, więc wszyscy widzą tę samą godzinę.
+
+function loadEventSettings() {
+  jsonpRequest('getSettings', {})
+    .then(s => {
+      if (s && s.returnTime) {
+        window.RETURN_TIME = s.returnTime;
+      } else {
+        window.RETURN_TIME = null;
+      }
+      if (typeof updateCountdown === 'function') updateCountdown();
+      renderReturnTimeStatus();
+    })
+    .catch(() => {});
+}
+
+function renderReturnTimeStatus() {
+  const box = document.getElementById('returnTimeStatus');
+  if (!box) return;
+
+  if (window.RETURN_TIME) {
+    const d = new Date(window.RETURN_TIME);
+    box.innerHTML = '<span class="rt-on">Ustawiona: ' +
+      d.toLocaleString('pl-PL', { day: 'numeric', month: 'long',
+                                  hour: '2-digit', minute: '2-digit' }) +
+      '</span>';
+    const inp = document.getElementById('returnTimeInput');
+    if (inp && !inp.value) {
+      // datetime-local wymaga czasu lokalnego bez strefy
+      const pad = n => String(n).padStart(2, '0');
+      inp.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}` +
+                  `T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+  } else {
+    box.innerHTML = '<span class="rt-off">Nie ustawiona — licznik odlicza do zamknięcia zapisów.</span>';
+  }
+}
+
+function saveReturnTime() {
+  const inp = document.getElementById('returnTimeInput');
+  if (!inp || !inp.value) {
+    showMessage('Najpierw wybierz datę i godzinę.', 'error');
+    return;
+  }
+  const d = new Date(inp.value);
+  if (isNaN(d.getTime())) { showMessage('Nieprawidłowa data.', 'error'); return; }
+
+  showMessage('Zapisuję godzinę powrotu...', 'info');
+  jsonpRequest('setReturnTime', { token: adminToken, value: d.toISOString() })
+    .then(res => {
+      if (res && res.status === 'success') {
+        window.RETURN_TIME = res.returnTime;
+        if (typeof updateCountdown === 'function') updateCountdown();
+        renderReturnTimeStatus();
+        showMessage('Licznik przełączony na odliczanie do powrotu.', 'success');
+      } else {
+        showMessage('Nie udało się zapisać: ' + ((res && res.error) || 'błąd'), 'error');
+      }
+    })
+    .catch(() => showMessage('Brak połączenia z arkuszem.', 'error'));
+}
+
+function clearReturnTime() {
+  showMessage('Czyszczę godzinę powrotu...', 'info');
+  jsonpRequest('setReturnTime', { token: adminToken, value: '' })
+    .then(res => {
+      if (res && res.status === 'success') {
+        window.RETURN_TIME = null;
+        const inp = document.getElementById('returnTimeInput');
+        if (inp) inp.value = '';
+        if (typeof updateCountdown === 'function') updateCountdown();
+        renderReturnTimeStatus();
+        showMessage('Licznik wrócił do odliczania zapisów.', 'success');
+      } else {
+        showMessage('Nie udało się wyczyścić.', 'error');
+      }
+    })
+    .catch(() => showMessage('Brak połączenia z arkuszem.', 'error'));
+}
+
+window.saveReturnTime = saveReturnTime;
+window.clearReturnTime = clearReturnTime;
+window.loadEventSettings = loadEventSettings;
