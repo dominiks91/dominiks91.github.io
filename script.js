@@ -21,7 +21,7 @@ const CONFIG = {
   // sie nie wyswietla, np. 'https://grzybobranie.pages.dev/'  (ze slashem na koncu!)
   SITE_URL_OVERRIDE: '',
   // <-- WKLEJ TU NOWY URL /exec z tegorocznego wdrożenia Apps Script
-  WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbwQWTzGigpXfDApee-zmtBEC2wacLe5W3f0YEbjEvIgjRRdRrPHdXVhWTUYfOHYScv59g/exec'
+  WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbxUJLJjD3mUqRIOMwY-TbAovJAfvGQ6OkOGPnl9V_7qaaIAi_6P-SAYJi0dKA3B4icHjQ/exec'
 };
 
 // ===== ZDJECIA Z ZESZLEGO ROKU =====
