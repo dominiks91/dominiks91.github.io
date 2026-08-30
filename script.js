@@ -853,7 +853,7 @@ function displayTeams() {
     div.style.cssText = 'background: white; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #2d5016;';
     div.innerHTML = `
       <h4 style="margin: 0 0 10px 0; color: #2d5016;">${team.name}</h4>
-      <p style="margin: 5px 0;"><strong>Lider:</strong> ${leaderName}</p>
+      <p style="margin: 5px 0;"><strong>Kapitan:</strong> ${leaderName}</p>
       <p style="margin: 5px 0;"><strong>Członkowie:</strong> ${members}</p>
     `;
     container.appendChild(div);
