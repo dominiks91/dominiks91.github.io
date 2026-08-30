@@ -6,7 +6,7 @@ const CONFIG = {
   EMAILJS_PUBLIC_KEY: 'nKv_qZgxWLURjtk2V',
   // Hasła admina NIE MA w tym pliku - siedzi w Apps Script (Wlasciwosci skryptu).
   // Patrz instrukcja, Etap 1.6.
-  REGISTRATION_DEADLINE: new Date('2026-08-29T23:59:59'),
+  REGISTRATION_DEADLINE: new Date('2026-09-28T23:59:59'),
   MAX_PARTICIPANTS: 40,
   EVENT_DATE_TEXT: '3 października 2026',
   EVENT_DATE_ISO: '2026-10-03',        // do sprawdzania daty zdjec
@@ -16,7 +16,7 @@ const CONFIG = {
   EVENT_LAT: 52.796917,        // 52°47'48.9"N
   EVENT_LON: 21.498333,        // 21°29'54.0"E
   EVENT_RADIUS_KM: 5,                  // w takim promieniu zdjecie uznajemy za zrobione na miejscu
-  MEETING_POINT_TEXT: 'ul. Wilcza 14, Grądy Szlacheckie, godz. 11:00',
+  MEETING_POINT_TEXT: 'ul. Wilcza 14, Grądy Szlacheckie, godz. 11:30',
   // Zostaw pusty - adres wykryje sie sam. Wypelnij TYLKO gdy zdjecie w mailu
   // sie nie wyswietla, np. 'https://grzybobranie.pages.dev/'  (ze slashem na koncu!)
   SITE_URL_OVERRIDE: '',
