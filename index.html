@@ -59,6 +59,9 @@
       color: #fff;
       text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
     }
+
+    #countdownExtra { margin-top: 8px; }
+    .cd-hint { font-size: .82em; opacity: .85; }
     .countdown-expired {
       font-size: 1.2em;
       font-weight: bold;
@@ -143,6 +146,25 @@
       border-radius:50%; animation:spin .7s linear infinite; vertical-align:-2px;
     }
     @keyframes spin { to { transform:rotate(360deg); } }
+
+
+    /* ===== GODZINA POWROTU (panel admina) ===== */
+    .return-time-box {
+      background:#fff; border-radius:10px; padding:18px; margin:18px 0;
+      box-shadow:0 2px 6px rgba(0,0,0,.1);
+    }
+    .return-time-box h3 { margin:0 0 8px; color:#2d5016; }
+    .rt-desc { font-size:.9em; color:#666; line-height:1.55; margin:0 0 14px; }
+    .rt-row { display:flex; flex-wrap:wrap; gap:9px; align-items:center; }
+    .rt-row input {
+      flex:1 1 200px; padding:12px; font-size:1.02em;
+      border:1px solid #b8c9a8; border-radius:7px; box-sizing:border-box;
+    }
+    .rt-clear { background:#eee !important; color:#666 !important; }
+    .rt-status { margin-top:11px; font-size:.92em; }
+    .rt-on  { color:#2d5016; font-weight:bold; }
+    .rt-off { color:#999; }
+    @media (max-width:600px) { .rt-row input { flex-basis:100%; } .rt-row button { flex:1; } }
 
     /* ===== OKIENKO NA HASLO ===== */
     #pwOverlay {
@@ -603,8 +625,9 @@
       
       <!-- DODANY ELEMENT COUNTDOWN -->
       <div class="countdown-container">
-        <p><strong>⏳ Czas do zamknięcia zapisów:</strong></p>
+        <p><strong id="countdownLabel">⏳ Czas do zamknięcia zapisów:</strong></p>
         <div id="countdown">Ładowanie...</div>
+        <div id="countdownExtra"></div>
       </div>
     </div>
 
@@ -757,11 +780,6 @@
     <div id="results" class="tab-panel">
       <h2>🏆 Wyniki</h2>
       <div id="publicScoreboard"></div>
-
-      <div class="note-box" style="margin-top:18px">
-        Suma to punkty z karty misji i waga zbioru (1 kg = 1 pkt), minus kary.
-        Szczegóły w zakładce <strong>⭐ Punktacja</strong>.
-      </div>
     </div>
 
     <!-- KARTA MISJI -->
@@ -948,6 +966,21 @@
         <button onclick="createTeams()" class="admin-btn">👥 Utwórz Drużyny</button>
         <button onclick="sendTeamEmails()" class="admin-btn">📤 Wyślij Emaile z Drużynami</button>
       </div>
+
+      <div class="return-time-box">
+        <h3>⏱️ Godzina powrotu z lasu</h3>
+        <p class="rt-desc">
+          Ustaw ją w dniu imprezy, po wypuszczeniu drużyn. Licznik na stronie głównej
+          przestanie odliczać do zamknięcia zapisów i zacznie odliczać do powrotu na metę.
+          Wszyscy zobaczą tę samą godzinę.
+        </p>
+        <div class="rt-row">
+          <input type="datetime-local" id="returnTimeInput">
+          <button onclick="saveReturnTime()" class="admin-btn">Ustaw</button>
+          <button onclick="clearReturnTime()" class="admin-btn rt-clear">Wyczyść</button>
+        </div>
+        <div id="returnTimeStatus" class="rt-status"></div>
+      </div>
       <div class="participants-table-container">
         <h3>👥 Lista Uczestników (Panel Admina)</h3>
         <table id="participantsTable">
@@ -993,49 +1026,82 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
   <script>
-    // Funkcja odliczania czasu do zakończenia zapisów
+    // ================= ODLICZANIE =================
+    // Dwa tryby:
+    //   1. przed imprezą  -> odliczamy do zamknięcia zapisów
+    //   2. w dniu imprezy -> organizator ustawia godzinę powrotu w panelu admina
+    //                        i licznik przełącza się na odliczanie do powrotu
+    //
+    // Godzina powrotu przychodzi z Apps Script, więc wszyscy widzą tę samą.
+    window.RETURN_TIME = null;
+
     function updateCountdown() {
-      // Data zakończenia zapisów - MUSI być zgodna z REGISTRATION_DEADLINE w script.js
+      const el    = document.getElementById('countdown');
+      const label = document.getElementById('countdownLabel');
+      const extra = document.getElementById('countdownExtra');
+      if (!el) return;
+
+      // --- TRYB 2: powrót z lasu ---
+      if (window.RETURN_TIME) {
+        const powrot = new Date(window.RETURN_TIME);
+        const zostalo = powrot - new Date();
+        const godzina = powrot.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+
+        label.innerHTML = '⏱️ Do powrotu na miejsce zbiórki:';
+
+        if (zostalo > 0) {
+          const h = Math.floor(zostalo / 3600000);
+          const m = Math.floor((zostalo % 3600000) / 60000);
+          const s = Math.floor((zostalo % 60000) / 1000);
+          el.innerHTML = h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`;
+          el.className = (zostalo < 15 * 60000) ? 'countdown-expired' : 'countdown-display';
+          extra.innerHTML = `<span class="cd-hint">Powrót o ${godzina}</span>`;
+        } else {
+          // Po czasie liczymy spóźnienie - kara to 2 pkt za każdą rozpoczętą minutę
+          const spoznienie = Math.ceil(-zostalo / 60000);
+          el.innerHTML = '⏰ Czas minął!';
+          el.className = 'countdown-expired';
+          extra.innerHTML = `<span class="cd-hint">Powrót był o ${godzina} &middot; ` +
+            `spóźnienie ${spoznienie} min = −${spoznienie * 2} pkt</span>`;
+        }
+        return;
+      }
+
+      // --- TRYB 1: zapisy ---
+      // Data MUSI być zgodna z REGISTRATION_DEADLINE w script.js
       const deadline = new Date('2026-09-24T23:59:59');
-      const now = new Date();
-      const timeLeft = deadline - now;
-      
-      const countdownElement = document.getElementById('countdown');
-      
+      const timeLeft = deadline - new Date();
+
+      label.innerHTML = '⏳ Czas do zamknięcia zapisów:';
+      extra.innerHTML = '';
+
       if (timeLeft > 0) {
-        const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-        
-        countdownElement.innerHTML = `${days} dni, ${hours}h ${minutes}m ${seconds}s`;
-        countdownElement.className = 'countdown-display';
+        const days = Math.floor(timeLeft / 86400000);
+        const hours = Math.floor((timeLeft % 86400000) / 3600000);
+        const minutes = Math.floor((timeLeft % 3600000) / 60000);
+        const seconds = Math.floor((timeLeft % 60000) / 1000);
+        el.innerHTML = `${days} dni, ${hours}h ${minutes}m ${seconds}s`;
+        el.className = 'countdown-display';
       } else {
-        countdownElement.innerHTML = '⌛ Zapisy zakończone!';
-        countdownElement.className = 'countdown-expired';
-        
-        // Wyłącz formularz rejestracji po deadline
+        el.innerHTML = '⌛ Zapisy zakończone!';
+        el.className = 'countdown-expired';
+
         const form = document.getElementById('registrationForm');
         if (form) {
-          const inputs = form.querySelectorAll('input, select, button');
-          inputs.forEach(input => input.disabled = true);
-          
-          const registrationDiv = document.querySelector('#registration');
-          if (registrationDiv && !registrationDiv.querySelector('.deadline-message')) {
-            const message = document.createElement('div');
-            message.className = 'deadline-message';
-            message.style.cssText = 'background: #ffebee; color: #c62828; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #c62828;';
-            message.innerHTML = '<strong>⚠️ Zapisy zostały zamknięte!</strong><br>Termin rejestracji upłynął 24 września 2026 o 23:59.';
-            registrationDiv.insertBefore(message, form);
+          form.querySelectorAll('input, select, button').forEach(i => i.disabled = true);
+          const reg = document.querySelector('#registration');
+          if (reg && !reg.querySelector('.deadline-message')) {
+            const msg = document.createElement('div');
+            msg.className = 'deadline-message';
+            msg.style.cssText = 'background:#ffebee;color:#c62828;padding:15px;border-radius:8px;margin:15px 0;border-left:4px solid #c62828;';
+            msg.innerHTML = '<strong>⚠️ Zapisy zostały zamknięte!</strong><br>Termin rejestracji upłynął 24 września 2026 o 23:59.';
+            reg.insertBefore(msg, form);
           }
         }
       }
     }
-    
-    // Aktualizuj co sekundę
+
     setInterval(updateCountdown, 1000);
-    
-    // Uruchom od razu
     updateCountdown();
   </script>
   <script src="script.js"></script>
