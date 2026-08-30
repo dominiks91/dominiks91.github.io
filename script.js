@@ -936,26 +936,25 @@ async function sendTeamEmails() {
         }).join(', '),
         event_date: CONFIG.EVENT_DATE_TEXT,
         meeting_point: CONFIG.MEETING_POINT_TEXT,
-        // Puste dla zwyklych czlonkow - w szablonie linia po prostu zniknie
-        captain_role: jestKapitanem ? 'Jesteś KAPITANEM tej drużyny.' : '',
-        captain_code: jestKapitanem ? kod : '',
         // Kod drużyny dostają WSZYSCY - służy do wysyłania zdjęć z misji
         team_code: kodyDruzyn[String(team.id)] || '',
 
-        // Przełączniki dla bloków warunkowych w szablonie EmailJS.
-        // Pusty ciąg = sekcja {{#...}} się NIE wyrenderuje, więc zwykły
-        // członek nie dostaje pustej ramki po kodzie kapitana.
-        is_captain: jestKapitanem ? '1' : '',
-        is_chairman: jestPrzewodniczacym ? '1' : '',
-
-        // Kto przewodniczy komisji - żeby wiedzieli wszyscy, nie tylko on sam
-        chairman_name: przewodniczacyImie,
-        chairman_team: przewodniczacyTeam,
-        // Kapitan własnej drużyny - dla zwykłych członków
-        team_captain_name: (() => {
-          const l = participants.find(p => String(p.id) === String(team.leader));
-          return l ? l.name : '';
-        })()
+        // Cały blok o roli w komisji budujemy TUTAJ, nie w szablonie.
+        // Powód: EmailJS odrzucał szablon z sekcjami warunkowymi
+        // ("One or more dynamic variables are corrupted"). Gotowy HTML
+        // wstawiamy przez potrójne nawiasy, więc w szablonie nie ma
+        // żadnej składni poza zwykłymi nazwami zmiennych.
+        role_block: budujBlokRoli({
+          jestKapitanem: jestKapitanem,
+          jestPrzewodniczacym: jestPrzewodniczacym,
+          kodKapitana: kod,
+          chairmanName: przewodniczacyImie,
+          chairmanTeam: przewodniczacyTeam,
+          teamCaptainName: (() => {
+            const l = participants.find(p => String(p.id) === String(team.leader));
+            return l ? l.name : '';
+          })()
+        })
       };
       try {
         await emailjs.send(CONFIG.EMAILJS_SERVICE_ID, CONFIG.EMAILJS_TEMPLATE_ID, emailParams);
@@ -966,6 +965,68 @@ async function sendTeamEmails() {
     }
   }
   showMessage('Wysłano emaile do uczestników!', 'success');
+}
+
+// ========= BLOK O ROLI W KOMISJI (do maila) =========
+// Trzy warianty: przewodniczący, zwykły kapitan, członek drużyny.
+// Cała treść jest neutralna płciowo - używamy czasu teraźniejszego
+// i imion zamiast zaimków, bo nie znamy płci odbiorców.
+function escHtml(s) {
+  return String(s === null || s === undefined ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function budujBlokRoli(o) {
+  const kapitanBox = `
+<table style="background:#2d5016;border-radius:8px;margin-top:14px;" role="presentation" width="100%" cellspacing="0" cellpadding="0"><tbody><tr>
+<td style="padding:20px 18px;" align="center">
+<p style="margin:0 0 6px 0;color:#ffd97d;font-size:13px;line-height:19px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;">Reprezentujesz drużynę w komisji</p>
+<p style="margin:0 0 10px 0;color:#ffffff;font-size:14px;line-height:20px;">Kod do panelu komisji sędziowskiej:</p>
+<p style="margin:0;color:#ffffff;font-size:31px;line-height:38px;font-weight:bold;letter-spacing:6px;font-family:'Courier New',monospace;">${escHtml(o.kodKapitana)}</p>
+<p style="margin:12px 0 0 0;color:#a8c48a;font-size:12px;line-height:18px;">W komisji zasiada po jednej osobie z każdej drużyny.<br />Nie przekazuj kodu nikomu &mdash; to Twój głos w komisji.</p>
+</td></tr></tbody></table>`;
+
+  const przewodniczacyBox = `
+<table style="background:#fff8e6;border:2px solid #d4a72c;border-radius:8px;margin-top:12px;" role="presentation" width="100%" cellspacing="0" cellpadding="0"><tbody><tr>
+<td style="padding:20px 18px;">
+<p style="margin:0 0 4px 0;color:#8a6d1f;font-size:12px;line-height:18px;text-transform:uppercase;letter-spacing:1px;text-align:center;">Dodatkowa rola</p>
+<p style="margin:0 0 12px 0;color:#6b5310;font-size:21px;line-height:27px;font-weight:bold;text-align:center;">🎖️ Prowadzisz komisję sędziowską</p>
+<p style="margin:0 0 12px 0;color:#5c4d20;font-size:14px;line-height:22px;">Ta rola przypadła Tobie. Spośród całej komisji to <strong>Ty odpowiadasz za wynik zawodów</strong>. Po powrocie z lasu, w zakładce <strong>Komisja</strong>, dla <strong>każdej</strong> drużyny:</p>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;line-height:22px;color:#5c4d20;"><tbody>
+<tr><td style="padding:2px 0;" valign="top" width="22">✅</td><td style="padding:2px 0;">odhaczasz wykonane misje z karty</td></tr>
+<tr><td style="padding:2px 0;" valign="top" width="22">⚖️</td><td style="padding:2px 0;">wpisujesz wagę zbioru w kilogramach</td></tr>
+<tr><td style="padding:2px 0;" valign="top" width="22">⛔</td><td style="padding:2px 0;">nanosisz kary i godzinę powrotu</td></tr>
+<tr><td style="padding:2px 0;" valign="top" width="22">💾</td><td style="padding:2px 0;">klikasz <strong>Zapisz wynik</strong> &mdash; dopiero wtedy drużyna trafia do tabeli</td></tr>
+</tbody></table>
+<p style="margin:12px 0 0 0;color:#5c4d20;font-size:14px;line-height:22px;">Reszta komisji ocenia wyłącznie <strong>Miss Kapelusza</strong>. Ty również na nią głosujesz &mdash; poza własną drużyną.</p>
+<p style="margin:10px 0 0 0;color:#8a6d1f;font-size:13px;line-height:20px;"><strong>Przyjdź z naładowanym telefonem.</strong> Bez Ciebie nikt nie zapisze wyników.</p>
+</td></tr></tbody></table>`;
+
+  const ramkaJasna = (naglowek, tresc) => `
+<table style="background:#f7faf3;border-left:4px solid #7aa354;border-radius:6px;margin-top:12px;" role="presentation" width="100%" cellspacing="0" cellpadding="0"><tbody><tr>
+<td style="padding:16px 18px;">
+<p style="margin:0 0 6px 0;color:#2d5016;font-size:14px;line-height:20px;font-weight:bold;">${naglowek}</p>
+${tresc}
+</td></tr></tbody></table>`;
+
+  const kto = escHtml(o.chairmanName);
+  const gdzie = escHtml(o.chairmanTeam);
+
+  if (o.jestKapitanem && o.jestPrzewodniczacym) {
+    return kapitanBox + przewodniczacyBox;
+  }
+
+  if (o.jestKapitanem) {
+    return kapitanBox + ramkaJasna('⚖️ Kto prowadzi komisję', `
+<p style="margin:0 0 8px 0;color:#444444;font-size:14px;line-height:22px;">Komisję prowadzi <strong>${kto}</strong> z drużyny <strong>${gdzie}</strong> &mdash; odhacza misje, wpisuje wagę i kary oraz zapisuje wyniki wszystkich drużyn.</p>
+<p style="margin:0;color:#444444;font-size:14px;line-height:22px;">Twoje zadanie w komisji: głosowanie na <strong>Miss Kapelusza</strong> &mdash; oceniasz grzyby wszystkich drużyn oprócz własnej. Skala 0&ndash;10, po zapisaniu głosu strona pokaże potwierdzenie.</p>`);
+  }
+
+  return ramkaJasna('⚖️ Kto ocenia zawody', `
+<p style="margin:0 0 8px 0;color:#444444;font-size:14px;line-height:22px;">Waszą drużynę reprezentuje w komisji sędziowskiej <strong>${escHtml(o.teamCaptainName)}</strong>.</p>
+<p style="margin:0 0 8px 0;color:#444444;font-size:14px;line-height:22px;">Całą komisją kieruje <strong>${kto}</strong> z drużyny <strong>${gdzie}</strong> &mdash; po powrocie odhacza misje, waży zbiory i zapisuje wyniki.</p>
+<p style="margin:0;color:#444444;font-size:14px;line-height:22px;">Zdjęcia z misji może wysłać <strong>dowolna osoba z drużyny</strong> &mdash; wystarczy kod drużyny powyżej.</p>`);
 }
 
 // ========= FUNKCJE TESTOWE =========
