@@ -620,7 +620,7 @@
         </div>
       </div>
       <p><strong>📅 Data:</strong> sobota, 3 października 2026</p>
-      <p><strong>⏰ Zbiórka:</strong> godzina 11, ul. Wilcza 14, Grądy Szlacheckie</p>
+      <p><strong>⏰ Zbiórka:</strong> godzina 11:30, ul. Wilcza 14, Grądy Szlacheckie</p>
       <p><strong>👥 Drużyny:</strong> wylosowane po zamknięciu zapisów</p>
       
       <!-- DODANY ELEMENT COUNTDOWN -->
@@ -643,7 +643,7 @@
       <button class="tab-button" onclick="showTab('photos')">📤 Wyślij zdjęcia</button>
       <button class="tab-button" onclick="showTab('teams')">👥 Drużyny</button>
       <button class="tab-button" onclick="showTab('weather')">🌦️ Pogoda</button>
-      <button class="tab-button" onclick="showTab('gallery')">📸 Zeszły rok</button>
+      <button class="tab-button" onclick="showTab('gallery')">📸 Grzybobranie 2025</button>
       <button class="tab-button" onclick="showTab('judge')">⚖️ Komisja</button>
       <button class="tab-button" onclick="showTab('admin')">🔧 Admin</button>
     </div>
@@ -655,17 +655,14 @@
       <h3>🌲</h3>
       <ul>
         <li>Śmieci zabieramy ze sobą.</li>
-        <li>Grzyby ścinamy nożem, nie wyrywamy — grzybnia zostaje w ziemi.</li>
         <li>Nie rozkopujemy ściółki i nie niszczymy grzybów, których nie zbieramy.</li>
-        <li>Obowiązuje regulamin Lasów Państwowych.</li>
       </ul>
 
       <h3>⚖️</h3>
       <ul>
         <li>Grzyb należy do tego, kto pierwszy do niego podszedł.</li>
-        <li>Do koszyka trafia wyłącznie to, co zebraliście dzisiaj.</li>
-        <li>Grzybów, których nie rozpoznajecie, nie zbieramy. W razie wątpliwości pytamy.</li>
-        <li>Misja zaliczona to misja faktycznie wykonana.</li>
+        <li>Do koszyka trafia wyłącznie to, co zebraliście dzisiaj - zakaz kupowania grzybów i podrzucania do koszyka.</li>
+        <li>Grzybów, których nie rozpoznajecie, nie zbieramy. W razie wątpliwości konsultujemy wewnątrz drużyny.</li>
       </ul>
 
       <h3>👥</h3>
@@ -677,38 +674,37 @@
 
       <h3>⏰</h3>
       <ul>
-        <li>Start wspólny, godzina powrotu podana przed wejściem do lasu.</li>
+        <li>Wspólny start, na którym zostanie podana godzina powrotu.</li>
         <li>Każda rozpoczęta minuta spóźnienia to −2 punkty.</li>
-        <li>Na zbieranie przewidziane są około dwie godziny.</li>
+        <li>Czas zbierania to około 2 godziny.</li>
       </ul>
 
-      <h3>🎒</h3>
+      <h3>🎒 Co zabrać </h3>
       <ul>
         <li>Koszyk wiklinowy lub z naturalnych materiałów. Reklamówka to −10 punktów.</li>
-        <li>Nóż do grzybów.</li>
         <li>Naładowany telefon — część misji wymaga zrobienia zdjęcia.</li>
-        <li>Zdjęcia wysyła ze strony ta osoba, która je zrobiła — potrzebny jest kod drużyny
+        <li>Zdjęcia wysyłacie przez stronę — potrzebny jest kod drużyny
             z maila z przydziałem. Nie przesyłajcie ich sobie komunikatorem, bo tracą
             datę i lokalizację.</li>
         <li>Do każdej misji zdjęciowej liczy się jedno zdjęcie. Kolejne zastępuje poprzednie.</li>
-        <li>Karta misji, którą dostaniecie na starcie, i długopis. W lesie nie ma zasięgu.</li>
+        <li>Karta misji, którą dostaniecie na starcie, i długopis. W lesie może nie być zasięgu.</li>
         <li>Buty i kurtka na zmienną pogodę.</li>
       </ul>
 
       <h3>🏆</h3>
       <ul>
-        <li>Waga zbioru: 1 kg = 1 punkt, zaokrąglane do 0,1 kg. Z 3,47 kg wychodzi 3,5 pkt.</li>
-        <li>Większość punktów pochodzi jednak z karty misji, nie z wagi.</li>
-        <li>Kartę misji dostaniecie na starcie. Do tego czasu zadania pozostają tajemnicą.</li>
-        <li>Część zadań ocenia komisja kapitanów — każdy ocenia wszystkie drużyny oprócz swojej.</li>
+        <li>Waga zbioru: 1 kg = 1 punkt, zaokrąglane do 0.1 kg.</li>
+        <li>Większość punktów pochodzi jednak z karty misji.</li>
+        <li>Karta misji zostanie ujawniona po wylosowaniu drużyn</li>
+        <li>Punkty liczy komisja sędziowska składająca się z kapitanów.</li>
         <li>Grzyb trujący w koszyku to −15 punktów za sztukę.</li>
       </ul>
 
       <h3>👨‍👩‍👧‍👦</h3>
       <ul>
-        <li>Dzieci uczestniczą w drużynie rodzica lub opiekuna, bez osobnego zapisu.</li>
-        <li>Problem w lesie — dzwonimy do organizatorów.</li>
-        <li>Po powrocie ognisko i grill.</li>
+        <li>Dzieci uczestniczą w drużynie rodzica lub opiekuna bez osobnego zapisu.</li>
+        <li>Problemy w lesie — uciekamy na drzewo.</li>
+        <li>Po powrocie liczenie punktów i ognisko.</li>
       </ul>
     </div>
 
@@ -716,25 +712,23 @@
     <div id="points" class="tab-panel points">
       <h2>⭐ Punktacja</h2>
 
-      <p>Punkty pochodzą z dwóch źródeł: wagi zbioru i karty misji. Od sumy odejmujemy kary.</p>
+      <p>Punkty otrzymujemy za wagę zebranych grzybów oraz za wykonani misji. Od sumy odejmujemy kary.</p>
 
       <div class="note-box">
-        <strong>Zadania z karty misji poznacie dopiero na starcie.</strong>
-        Kartę dostaje każda drużyna po wylosowaniu składów, tuż przed wejściem do lasu.
-        Do tego czasu treść zadań pozostaje tajemnicą — dla wszystkich tak samo.
+        <strong>Zadania z karty zostaną ujawnione po wylosowaniu drużyn.</strong>
       </div>
 
       <h3>⚖️ Waga</h3>
-      <p>Kilogram zbioru to punkt. Waga zaokrąglana jest do jednej dziesiątej kilograma.</p>
+      <p>Wagę przeliczamy na punkty zaokrąglając  do jednej dziesiątej kilograma.</p>
       <ul>
-        <li>3,44 kg → 3,4 pkt</li>
-        <li>3,45 kg → 3,5 pkt</li>
-        <li>3,47 kg → 3,5 pkt</li>
+        <li>3.44 kg → 3.4 pkt</li>
+        <li>3.45 kg → 3.5 pkt</li>
+        <li>3.47 kg → 3.5 pkt</li>
       </ul>
       <p>Ważymy raz, cały koszyk, po powrocie na metę. Grzyby niejadalne wyjmujemy przed ważeniem.</p>
 
       <h3>🎯 Karta misji</h3>
-      <p>Każda drużyna dostaje na starcie tę samą kartę z zadaniami do wykonania w lesie.
+      <p>Każda drużyna ma tę samą kartę z zadaniami do wykonania w lesie.
          Odhaczacie je długopisem, komisja weryfikuje po powrocie. Zadania dzielą się na trzy rodzaje:</p>
       <ul>
         <li><strong>Znaleziska</strong> — trzeba przynieść w koszyku określone grzyby</li>
@@ -742,16 +736,14 @@
             i przesłaniu przez stronę, w zakładce „Wyślij zdjęcia"</li>
         <li><strong>Zadania oceniane</strong> — o punktach decyduje komisja kapitanów</li>
       </ul>
-      <p>Z karty misji można zebrać znacznie więcej punktów niż z wagi koszyka, więc bieganie
-         po lesie z jak największym workiem nie wystarczy.</p>
+     
 
       <h3>👥 Kto ocenia</h3>
-      <p>Komisję tworzą kapitanowie wszystkich drużyn. Jeden z nich jest przewodniczącym —
+      <p>Komisję sędziowską tworzą kapitanowie wszystkich drużyn. Jeden z nich jest przewodniczącym —
          odhacza wykonane zadania, wpisuje wagę i kary. Pozostali kapitanowie głosują
          w zadaniach ocenianych uznaniowo.</p>
       <p>Kapitan nie ocenia własnej drużyny. Przy ocenach uznaniowych odrzucamy najwyższą
-         i najniższą notę, a liczy się średnia z pozostałych — pojedynczy skrajny głos
-         niczego nie przesądza.</p>
+         i najniższą notę (jak w skokach narciarskich), a liczy się średnia z pozostałych.</p>
 
       <h3>⛔ Kary</h3>
       <ul>
@@ -761,19 +753,14 @@
       </ul>
 
       <h3>🤝 Remis</h3>
-      <p>Rozstrzygamy po kolei, aż pojawi się różnica:</p>
+      <p>W przypadku tej samej liczby punktów wygrywa drużyna:</p>
       <ol>
-        <li>Wyższa nota w zadaniu ocenianym uznaniowo</li>
-        <li>Wcześniejszy powrót na metę</li>
-        <li>Zgadywanie, w której dłoni sędzia trzyma grzyba</li>
+        <li>Z wyższą liczbą punktów w zadaniu ocenianym uznaniowo</li>
+        <li>Która wróciła wcześniej z lasu </li>
+        <li>W przypadku dalszego remisu o zwycięstwie decyduje losowanie</li>
       </ol>
 
-      <h3>🏆 Nagrody</h3>
-      <ul>
-        <li><strong>Złoty Borowik</strong> — najwyższa suma punktów</li>
-        <li><strong>Nagroda Puszczy</strong> — najlżejszy koszyk przy komplecie wykonanych zadań</li>
-        <li>Trzecia nagroda czeka na zwycięzcę jednego z zadań z karty misji</li>
-      </ul>
+      
     </div>
 
     <!-- WYNIKI NA ZYWO -->
