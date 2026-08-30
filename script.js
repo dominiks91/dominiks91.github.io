@@ -874,10 +874,14 @@ async function sendTeamEmails() {
 
   // Kody kapitanów są w arkuszu - pobieramy je przed wysyłką
   let kody = {};
+  let przewodniczacyTeam = '';
   try {
     const dane = await jsonpRequest('getCaptainCodes', { token: adminToken });
     if (Array.isArray(dane)) {
-      dane.forEach(d => { kody[String(d.teamId)] = d.code; });
+      dane.forEach(d => {
+        kody[String(d.teamId)] = d;
+        if (d.isChairman) przewodniczacyTeam = d.teamName;
+      });
     }
   } catch (e) {
     showMessage('Nie udało się pobrać kodów kapitanów — maile pójdą bez nich.', 'warning');
@@ -894,13 +898,28 @@ async function sendTeamEmails() {
     showMessage('Nie udało się pobrać kodów drużyn — maile pójdą bez nich.', 'warning');
   }
 
+  // Lepiej zatrzymać wysyłkę teraz niż rozesłać 30 maili bez kodu do zdjęć
+  const brakKodow = teams.filter(t => !kodyDruzyn[String(t.id)]);
+  if (brakKodow.length) {
+    showMessage(`STOP: brak kodu drużyny dla: ${brakKodow.map(t => t.name).join(', ')}. ` +
+                `Uruchom w Apps Script funkcję naprawArkuszDruzyn i spróbuj ponownie.`, 'error');
+    return;
+  }
+  if (!przewodniczacyTeam) {
+    showMessage('STOP: żadna drużyna nie ma TAK w kolumnie "Przewodniczący". ' +
+                'Ustaw to w arkuszu, inaczej nikt nie zapisze wyników.', 'error');
+    return;
+  }
+
   for (const team of teams) {
     for (const memberId of team.members) {
       const participant = participants.find(p => String(p.id) === String(memberId));
       if (!participant) continue;
 
       const jestKapitanem = String(team.leader) === String(memberId);
-      const kod = kody[String(team.id)] || '';
+      const rekord = kody[String(team.id)] || {};
+      const kod = rekord.code || '';
+      const jestPrzewodniczacym = jestKapitanem && !!rekord.isChairman;
 
       const emailParams = {
         to_name: participant.name,
@@ -916,7 +935,12 @@ async function sendTeamEmails() {
         captain_role: jestKapitanem ? 'Jesteś KAPITANEM tej drużyny.' : '',
         captain_code: jestKapitanem ? kod : '',
         // Kod drużyny dostają WSZYSCY - służy do wysyłania zdjęć z misji
-        team_code: kodyDruzyn[String(team.id)] || ''
+        team_code: kodyDruzyn[String(team.id)] || '',
+        // Kto przewodniczy komisji - inaczej kapitanowie się tego nie dowiedzą
+        chairman_role: jestPrzewodniczacym
+          ? 'Jesteś PRZEWODNICZĄCYM KOMISJI. To Ty odhaczasz misje, wpisujesz wagę i kary oraz zapisujesz wyniki wszystkich drużyn.'
+          : '',
+        chairman_team: przewodniczacyTeam
       };
       try {
         await emailjs.send(CONFIG.EMAILJS_SERVICE_ID, CONFIG.EMAILJS_TEMPLATE_ID, emailParams);
@@ -1358,6 +1382,12 @@ let judgeOwnTeam = null;    // drużyna zalogowanego kapitana
 let judgeIsAdmin = false;
 let judgeIsChairman = false;   // przewodniczący odhacza misje, reszta tylko głosuje
 let myBeautyVotes = {};     // {teamId: ocena} - głosy zalogowanego kapitana
+// Stan zapisu głosu: {teamId: {state:'saving'|'saved'|'error', score, time, error}}
+// Bez tego kapitan nie wie, czy kliknięcie cokolwiek zrobiło.
+let voteStatus = {};
+// Licznik głosów z serwera: {teamId: {value, votes, trimmed}}
+// Liczony niezależnie od arkusza "Wyniki", żeby działał przed zapisem komisji.
+let beautySummary = {};
 let judgeState = {};      // { teamId: {missions:{}, beauty:0, weight:'', penalties:0, returnTime:''} }
 let missionPhotos = [];   // zdjecia wgrane przez druzyny
 
@@ -1385,6 +1415,7 @@ function toggleJudgeMode() {
     judgeIsAdmin = false;
     judgeIsChairman = false;
     myBeautyVotes = {};
+    voteStatus = {};
     currentJudgedTeam = null;
     document.getElementById('judgePanel').style.display = 'none';
     document.getElementById('judgeLoginBox').style.display = 'block';
@@ -1423,13 +1454,19 @@ function toggleJudgeMode() {
               dla wszystkich drużyn oraz głosujesz na Miss Kapelusza.
               <br>Własnej drużyny nie oceniasz.`;
           } else {
+            const kimJest = res.chairmanTeam
+              ? `Przewodniczy kapitan drużyny <b>${res.chairmanTeam}</b>.`
+              : `<span class="warn-inline">Uwaga: nikt nie jest jeszcze przewodniczącym —
+                 zgłoś to organizatorowi, bo nikt nie zapisze wyników.</span>`;
             kto.innerHTML = `👤 <b>${judgeName}</b> · drużyna <b>${res.teamName}</b>
               <br>Głosujesz na <b>Miss Kapelusza</b> dla pozostałych drużyn.
-              Misje i wagę odhacza przewodniczący komisji.`;
+              Misje i wagę odhacza przewodniczący komisji.
+              <br>${kimJest}`;
           }
         }
 
         loadMissionPhotos();
+        loadBeautySummary();
         loadScoresFromSheet();
         loadMyVotes();
         renderJudgeTeamPicker();
@@ -1499,9 +1536,6 @@ function renderJudgeCard() {
   // Zwykły kapitan głosuje wyłącznie na Miss Kapelusza
   if (!pelny) {
     const m = MISSIONS.filter(x => x.judged)[0];
-    const mojGlos = myBeautyVotes[String(team.id)];
-    const wynik = savedScores.filter(s => String(s['ID drużyny']) === String(team.id))[0];
-    const ilu = wynik ? Number(wynik['Głosów Miss'] || 0) : 0;
 
     html += `
       <div class="mission-cat">
@@ -1509,19 +1543,7 @@ function renderJudgeCard() {
         <div class="mission-row judged">
           <div class="mission-body">
             <div class="mission-desc">${m ? m.desc : ''}</div>
-            <div class="vote-box">
-              <div class="vote-label">Twój głos${mojGlos !== undefined ? ' (oddany)' : ''}:</div>
-              <div class="vote-scale">
-                ${[0,1,2,3,4,5,6,7,8,9,10].map(n =>
-                  `<button class="vote-btn ${mojGlos === n ? 'picked' : ''}"
-                           onclick="castBeautyVote(${team.id}, ${n})">${n}</button>`).join('')}
-              </div>
-              <div class="vote-status">
-                ${ilu ? `Oddano <b>${ilu}</b> ${ilu === 1 ? 'głos' : (ilu < 5 ? 'głosy' : 'głosów')}
-                         · wynik drużyny: <b>${wynik['Miss Kapelusza']}</b> pkt`
-                      : 'Nikt jeszcze nie zagłosował na tę drużynę.'}
-              </div>
-            </div>
+            ${voteBoxHtml(team)}
           </div>
         </div>
       </div>
@@ -1541,32 +1563,12 @@ function renderJudgeCard() {
 
     MISSIONS.filter(m => m.cat === cat).forEach(m => {
       if (m.judged) {
-        const mojGlos = myBeautyVotes[String(team.id)];
-        const wynik = savedScores.filter(s => String(s['ID drużyny']) === String(team.id))[0];
-        const ilu = wynik ? Number(wynik['Głosów Miss'] || 0) : 0;
-        const srednia = wynik ? wynik['Miss Kapelusza'] : null;
-
         html += `
           <div class="mission-row judged">
             <div class="mission-body">
               <div class="mission-title">${m.title}<span class="mission-pts">0–${m.pts} pkt</span></div>
               <div class="mission-desc">${m.desc}</div>
-
-              <div class="vote-box">
-                <div class="vote-label">Twój głos${mojGlos !== undefined ? ' (oddany)' : ''}:</div>
-                <div class="vote-scale">
-                  ${[0,1,2,3,4,5,6,7,8,9,10].map(n =>
-                    `<button class="vote-btn ${mojGlos === n ? 'picked' : ''}"
-                             onclick="castBeautyVote(${team.id}, ${n})">${n}</button>`).join('')}
-                </div>
-                <div class="vote-status">
-                  ${ilu
-                    ? `Oddano <b>${ilu}</b> ${ilu === 1 ? 'głos' : (ilu < 5 ? 'głosy' : 'głosów')} ·
-                       wynik drużyny: <b>${srednia}</b> pkt
-                       ${wynik['Miss obcięta'] ? '<span class="vote-trim">(średnia bez skrajnych ocen)</span>' : ''}`
-                    : 'Nikt jeszcze nie zagłosował na tę drużynę.'}
-                </div>
-              </div>
+              ${voteBoxHtml(team)}
             </div>
           </div>`;
       } else {
@@ -1652,7 +1654,11 @@ function renderJudgeCard() {
 
 // Wynik Miss Kapelusza dla drużyny - zawsze z arkusza, nigdy lokalnie
 function missOf(teamId) {
-  const w = savedScores.filter(s => String(s['ID drużyny']) === String(teamId))[0];
+  // Najświeższe źródło to podsumowanie głosów, bo aktualizuje się
+  // przy każdym oddanym głosie, a nie dopiero przy zapisie wyniku
+  const s = beautySummary[String(teamId)];
+  if (s) return Number(s.value || 0);
+  const w = savedScores.filter(x => String(x['ID drużyny']) === String(teamId))[0];
   return w ? Number(w['Miss Kapelusza'] || 0) : 0;
 }
 
@@ -1690,25 +1696,96 @@ function castBeautyVote(teamId, ocena) {
     showMessage('Nie oceniasz własnej drużyny.', 'error');
     return;
   }
-  myBeautyVotes[String(teamId)] = ocena;    // od razu na ekranie, zapis w tle
+
+  const key = String(teamId);
+
+  // Dwuklik w trakcie zapisu robił dwa równoległe żądania i mieszał stan
+  if (voteStatus[key] && voteStatus[key].state === 'saving') return;
+
+  const poprzedni = myBeautyVotes[key];      // do cofnięcia, gdy zapis padnie
+
+  myBeautyVotes[key] = ocena;
+  voteStatus[key] = { state: 'saving', score: ocena };
   renderJudgeCard();
 
   jsonpRequest('saveBeautyVote', { token: judgeToken, teamId: teamId, score: ocena })
     .then(res => {
       if (res && res.status === 'success') {
-        showMessage(`Głos oddany: ${ocena}/10`, 'success');
+        voteStatus[key] = { state: 'saved', score: ocena, time: new Date() };
+        if (res.beauty) beautySummary[key] = res.beauty;
+        renderJudgeCard();
         loadScoresFromSheet();
       } else {
-        delete myBeautyVotes[String(teamId)];
+        if (poprzedni === undefined) delete myBeautyVotes[key];
+        else myBeautyVotes[key] = poprzedni;
+        voteStatus[key] = { state: 'error', error: (res && res.error) || 'serwer odrzucił głos' };
         renderJudgeCard();
-        showMessage('Nie zapisano głosu: ' + ((res && res.error) || 'błąd'), 'error');
       }
     })
     .catch(() => {
-      delete myBeautyVotes[String(teamId)];
+      if (poprzedni === undefined) delete myBeautyVotes[key];
+      else myBeautyVotes[key] = poprzedni;
+      voteStatus[key] = { state: 'error', error: 'brak połączenia' };
       renderJudgeCard();
-      showMessage('Brak połączenia — głos NIE został zapisany.', 'error');
     });
+}
+
+// Godzina zapisu - krótko, bez daty
+function godzinaHM(d) {
+  try {
+    return new Date(d).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+  } catch (e) { return ''; }
+}
+
+function slowoGlos(n) {
+  if (n === 1) return 'głos';
+  const ost = n % 10, dwie = n % 100;
+  if (ost >= 2 && ost <= 4 && !(dwie >= 12 && dwie <= 14)) return 'głosy';
+  return 'głosów';
+}
+
+// Jedno miejsce na skalę ocen - używają jej i przewodniczący, i zwykły kapitan.
+// Wcześniej ten sam HTML był w dwóch kopiach i rozjeżdżał się przy poprawkach.
+function voteBoxHtml(team) {
+  const key = String(team.id);
+  const mojGlos = myBeautyVotes[key];
+  const st = voteStatus[key] || {};
+  const sum = beautySummary[key] || { value: 0, votes: 0, trimmed: false };
+  const zapisuje = st.state === 'saving';
+
+  let pasek;
+  if (zapisuje) {
+    pasek = `<span class="vs-saving">⏳ Zapisuję ocenę ${st.score}/10…</span>`;
+  } else if (st.state === 'error') {
+    pasek = `<span class="vs-error">❌ Głos NIE został zapisany (${st.error}).
+             Kliknij ocenę jeszcze raz.</span>`;
+  } else if (st.state === 'saved') {
+    pasek = `<span class="vs-saved">✅ Zapisano Twoją ocenę: <b>${st.score}/10</b>
+             o ${godzinaHM(st.time)}</span>`;
+  } else if (mojGlos !== undefined) {
+    pasek = `<span class="vs-saved">✅ Twoja ocena: <b>${mojGlos}/10</b> — zapisana wcześniej</span>`;
+  } else {
+    pasek = `<span class="vs-none">Nie oddałeś jeszcze głosu na tę drużynę.</span>`;
+  }
+
+  return `
+    <div class="vote-box ${zapisuje ? 'busy' : ''}">
+      <div class="vote-label">Twoja ocena (0–10):</div>
+      <div class="vote-scale">
+        ${[0,1,2,3,4,5,6,7,8,9,10].map(n =>
+          `<button class="vote-btn ${mojGlos === n ? 'picked' : ''}"
+                   ${zapisuje ? 'disabled' : ''}
+                   onclick="castBeautyVote(${team.id}, ${n})">${n}</button>`).join('')}
+      </div>
+      <div class="vote-state">${pasek}</div>
+      <div class="vote-status">
+        ${sum.votes
+          ? `Łącznie oddano <b>${sum.votes}</b> ${slowoGlos(sum.votes)} ·
+             wynik drużyny: <b>${sum.value}</b> pkt
+             ${sum.trimmed ? '<span class="vote-trim">(średnia bez skrajnych ocen)</span>' : ''}`
+          : 'Ta drużyna nie ma jeszcze żadnych głosów.'}
+      </div>
+    </div>`;
 }
 function setJudgePenalties(teamId, v) { judgeStateFor(teamId).penalties = parseInt(v, 10) || 0; updateJudgeSummary(teamId); }
 function setJudgeReturn(teamId, v) { judgeStateFor(teamId).returnTime = v; }
@@ -1782,10 +1859,23 @@ function loadMyVotes() {
     .catch(() => {});
 }
 
+// Licznik głosów Miss - niezależny od tego, czy komisja zapisała już wynik
+function loadBeautySummary(poRenderze) {
+  return jsonpRequest('getBeauty', {})
+    .then(d => {
+      if (d && typeof d === 'object' && !d.error) {
+        beautySummary = d;
+        if (poRenderze) poRenderze();
+      }
+    })
+    .catch(() => {});
+}
+
 function loadScoresFromSheet() {
   jsonpRequest('getScores', {})
     .then(data => { if (Array.isArray(data)) { savedScores = data; renderScoreboard(); } })
     .catch(() => {});
+  loadBeautySummary(() => { if (isJudgeMode && currentJudgedTeam !== null) renderJudgeCard(); });
 }
 
 function renderScoreboard() {
@@ -2541,9 +2631,17 @@ function stopPublicScores() {
   if (publicScoresTimer) { clearInterval(publicScoresTimer); publicScoresTimer = null; }
 }
 
+let publicScoresUpdated = null;
+
 function loadPublicScores() {
   jsonpRequest('getScores', {})
-    .then(data => { if (Array.isArray(data)) { savedScores = data; renderPublicScores(); } })
+    .then(data => {
+      if (Array.isArray(data)) {
+        savedScores = data;
+        publicScoresUpdated = new Date();
+        renderPublicScores();
+      }
+    })
     .catch(() => {});
 }
 
@@ -2568,8 +2666,10 @@ function renderPublicScores() {
     return String(a['Godzina powrotu']).localeCompare(String(b['Godzina powrotu']));
   });
 
-  const ocenionych = sorted.length;
-  const wszystkich = teams.length || ocenionych;
+  // Drużyna z samymi głosami na Miss nie jest jeszcze "oceniona" -
+  // komisja nie wpisała jej misji ani wagi
+  const ocenionych = sorted.filter(s => !s['Tylko głosy']).length;
+  const wszystkich = teams.length || sorted.length;
   const trwa = ocenionych < wszystkich;
 
   const medale = ['🥇', '🥈', '🥉'];
@@ -2593,13 +2693,15 @@ function renderPublicScores() {
               👑 ${s['Miss Kapelusza']} Miss${s['Głosów Miss'] ? ` (${s['Głosów Miss']} gł.)` : ''} ·
               ⚖️ ${s['Punkty za wagę']} waga
               ${Number(s['Kary']) ? ` · ⛔ −${s['Kary']}` : ''}
+              ${s['Tylko głosy'] ? ' · <span class="pr-pending">czeka na komisję</span>' : ''}
             </div>
           </div>
           <div class="pr-total">${s['SUMA']}</div>
         </div>`).join('')}
     </div>
 
-    <p class="results-foot">Odświeża się automatycznie co 20 sekund.</p>`;
+    <p class="results-foot">Odświeża się automatycznie co 20 sekund.</p>
+    <p class="results-updated">Ostatnia aktualizacja: ${publicScoresUpdated ? godzinaHM(publicScoresUpdated) : '—'}</p>`;
 }
 
 window.startPublicScores = startPublicScores;
