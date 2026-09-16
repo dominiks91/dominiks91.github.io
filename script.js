@@ -28,9 +28,18 @@ const CONFIG = {
 // Wrzuc pliki do folderu "zdjecia" obok index.html i dopisz je tutaj.
 // Pusta lista = zakladka pokaze komunikat "wkrotce".
 const GALLERY_PHOTOS = [
-  // { file: 'las-01.jpg',  caption: 'Start o poranku' },
-  // { file: 'kosz-02.jpg', caption: 'Zdobycz druzyny Borowiki' },
-  // { file: 'grill-03.jpg',caption: 'Ognisko po zawodach' },
+  {
+    file: 'grzybobranie-2025-zdjecie-grupowe.jpg',
+    caption: 'Uczestnicy I Wielkiego Grzybobrania'
+  },
+  {
+    file: 'grzybobranie-2025-zbiory.jpg',
+    caption: 'Zbiory wszystkich drużyn'
+  },
+  {
+    file: 'grzybobranie-2025-ocena-zbiorow.jpg',
+    caption: 'Ocena zbiorów po powrocie z lasu'
+  }
 ];
 
 // ========= INICJALIZACJA =========
