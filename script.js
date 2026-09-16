@@ -39,6 +39,10 @@ const GALLERY_PHOTOS = [
   {
     file: 'grzybobranie-2025-ocena-zbiorow.jpg',
     caption: 'Ocena zbiorów po powrocie z lasu'
+  },
+  {
+    file: 'grzybobranie-2025-ognisko.jpg',
+    caption: 'Wspólne ognisko po zakończeniu zawodów'
   }
 ];
 
