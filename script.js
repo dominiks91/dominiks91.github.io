@@ -2341,14 +2341,99 @@ function fmtTemp(v, jedn, miejsc) {
   return n.toFixed(miejsc === undefined ? 1 : miejsc) + (jedn || '');
 }
 
-function mushroomMethodText() {
-  return 'Jak działa wskaźnik? ' +
-    'Ocenia pogodowe warunki do pojawienia się grzybów w skali od 0 do 100. ' +
+function mushroomFreshWaveMethodText() {
+  return 'Warunki dla świeżej fali oceniają aktualny impuls pogodowy w skali od 0 do 100. ' +
     'Wilgoć pokazuje, ile wody pozostało w glebie i ściółce po opadach z ostatnich 21 dni. ' +
-    'Temperatura określa, czy warunki są odpowiednie do wzrostu. ' +
-    'Rozwój uwzględnia czas, który upłynął od deszczu. ' +
-    'Im wyższy wynik, tym korzystniejszy układ pogodowy. ' +
-    'Wskaźnik nie określa liczby grzybów w lesie.';
+    'Temperatura określa, czy warunki są odpowiednie do wzrostu, a rozwój uwzględnia czas od deszczu. ' +
+    'Wskaźnik mówi o warunkach dla kolejnych owocników, a nie o liczbie grzybów już obecnych w lesie.';
+}
+
+function mushroomPresenceMethodText() {
+  return 'Aktywność grzybów szacuje ogólną obecność owocników na podstawie ' +
+    'najsilniejszego impulsu pogodowego, który wystąpił od 5 do 21 dni wcześniej. ' +
+    'Wskaźnik nie rozróżnia gatunków jadalnych i niejadalnych ani wpływu intensywnego zbierania.';
+}
+
+function activityLabel(value, fallback) {
+  const v = Number(value);
+
+  if (!Number.isFinite(v)) return fallback || 'Brak oceny';
+  if (v >= 85) return 'Bardzo wysoka';
+  if (v >= 70) return 'Wysoka';
+  if (v >= 50) return 'Umiarkowana';
+  if (v >= 30) return 'Niska';
+  return 'Bardzo niska';
+}
+
+function freshWaveLabel(value, fallback) {
+  const v = Number(value);
+
+  if (!Number.isFinite(v)) return fallback || 'Brak oceny';
+  if (v >= 80) return 'Bardzo dobre';
+  if (v >= 65) return 'Dobre';
+  if (v >= 45) return 'Umiarkowane';
+  if (v >= 25) return 'Słabe';
+  return 'Bardzo słabe';
+}
+
+function mushroomSituationText(presence, freshWave) {
+  if (!presence || !freshWave) return '';
+
+  const p = Number(presence.value);
+  const f = Number(freshWave.value);
+
+  if (!Number.isFinite(p) || !Number.isFinite(f)) return '';
+
+  if (p >= 70 && f >= 65) {
+    return '<strong>Aktywność grzybów jest wysoka, a warunki dla świeżej fali są dobre.</strong> ' +
+      'W lesie może występować dużo owocników, a obecna pogoda może sprzyjać dalszym przyrostom.';
+  }
+
+  if (p >= 70 && f < 45) {
+    return '<strong>Aktywność grzybów jest wysoka, ale warunki dla świeżej fali są słabe.</strong> ' +
+      'W lesie nadal może występować dużo grzybów powstałych dzięki wcześniejszym warunkom, ' +
+      'jednak liczba nowych owocników może być ograniczona.';
+  }
+
+  if (p >= 70) {
+    return '<strong>Aktywność grzybów jest wysoka.</strong> ' +
+      'W lesie może występować dużo owocników, ale tempo pojawiania się kolejnych jest umiarkowane.';
+  }
+
+  if (p < 50 && f >= 65) {
+    return '<strong>Ogólna aktywność jest jeszcze niska, ale warunki dla świeżej fali są dobre.</strong> ' +
+      'Może to oznaczać rozwijającą się falę, której efekty będą bardziej widoczne w kolejnych dniach.';
+  }
+
+  if (p < 50 && f < 45) {
+    return '<strong>Zarówno aktywność grzybów, jak i warunki dla świeżej fali są niskie.</strong> ' +
+      'Obecnie jest to słabszy okres dla grzybobrania.';
+  }
+
+  return '<strong>Aktywność grzybów jest umiarkowana.</strong> ' +
+    'Sytuacja może różnić się pomiędzy gatunkami i poszczególnymi miejscami w lesie.';
+}
+
+function mushroomSourceText(presence) {
+  if (!presence || !presence.sourceImpulseDate) return '';
+
+  const sourceDate = new Date(
+    presence.sourceImpulseDate + 'T12:00:00'
+  );
+
+  const formatted = Number.isNaN(sourceDate.getTime())
+    ? presence.sourceImpulseDate
+    : sourceDate.toLocaleDateString('pl-PL', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+
+  const age = Number(presence.sourceImpulseAgeDays);
+
+  return 'Ocena opiera się na najsilniejszym impulsie pogodowym z ' +
+    formatted +
+    (Number.isFinite(age) ? `, sprzed ${age} dni.` : '.');
 }
 
 function mushroomComponentsText(mi) {
@@ -2432,27 +2517,48 @@ function renderWeatherStrip(d) {
   const box = document.getElementById('weatherStrip');
   if (!box) return;
 
-  if (!d || !d.current) { box.style.display = 'none'; return; }
+  if (!d || !d.current) {
+    box.style.display = 'none';
+    return;
+  }
 
   const c = d.current;
-  const mi = d.mushroomIndex || computeMushroomIndex(d.history);
+  const freshWave = d.mushroomIndex || computeMushroomIndex(d.history);
+  const presence = d.mushroomPresence || null;
+  const mainIndicator = presence || freshWave;
 
   box.style.display = 'flex';
+
   box.innerHTML = `
     <div class="ws-item">
       <span class="ws-icon">${weatherIcon(c.icon)}</span>
       <span class="ws-temp">${fmtTemp(c.tempC, ' °C')}</span>
     </div>
+
     <div class="ws-item ws-sep">
       <span class="ws-lbl">deszcz dziś</span>
       <span class="ws-val">${fmtRain(c.rainTodayMm, ' mm')}</span>
     </div>
-    ${mi ? `
-    <div class="ws-item ws-sep">
-      <span class="ws-lbl">wskaźnik grzybowy</span>
-      <span class="ws-val ws-mi ${miClass(mi.value)}">${mi.value}/100 · ${mi.label}</span>
-    </div>` : ''}
-    <button class="ws-more" onclick="showTab('weather')">szczegóły →</button>`;
+
+    ${mainIndicator ? `
+      <div class="ws-item ws-sep">
+        <span class="ws-lbl">
+          ${presence ? 'aktywność grzybów' : 'warunki dla świeżej fali'}
+        </span>
+
+        <span class="ws-val ws-mi ${miClass(mainIndicator.value)}">
+          ${mainIndicator.value}/100 ·
+          ${presence
+            ? activityLabel(mainIndicator.value, mainIndicator.label)
+            : freshWaveLabel(mainIndicator.value, mainIndicator.label)}
+        </span>
+      </div>
+    ` : ''}
+
+    <button class="ws-more" onclick="showTab('weather')">
+      szczegóły →
+    </button>
+  `;
 }
 
 function miClass(v) {
