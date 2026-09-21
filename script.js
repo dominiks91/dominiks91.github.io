@@ -3724,3 +3724,24 @@ function clearReturnTime() {
 window.saveReturnTime = saveReturnTime;
 window.clearReturnTime = clearReturnTime;
 window.loadEventSettings = loadEventSettings;
+
+// ================= APLIKACJA PWA =================
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker
+      .register('./service-worker.js')
+      .then(function (registration) {
+        console.log(
+          'Service worker zarejestrowany:',
+          registration.scope
+        );
+      })
+      .catch(function (error) {
+        console.error(
+          'Błąd rejestracji service workera:',
+          error
+        );
+      });
+  });
+}
