@@ -1190,8 +1190,8 @@ const MISSIONS = [
   { id: 'm9',  cat: 'B', pts: 3,  title: 'Zdjęcie drużyny w komplecie',
     desc: 'Wszyscy w kadrze, w lesie. Selfie z wyciągniętej ręki jak najbardziej.' },
   { id: 'm13', cat: 'B', pts: 8,  title: 'Dzikie zwierzę leśne',
-    desc: 'Sarna, dzik, lis, wiewiórka, zając, ptak. Z bezpiecznej odległości — ' +
-          'nie podchodzimy, nie zaganiamy. Rozmazane zdjęcie umykającej sarny też się liczy.' },
+    desc: 'Sarna, łoś, jeleń, dzik, lis, wiewiórka, zając, borsuk, wilk, żuraw. Z bezpiecznej odległości — ' +
+          'nie podchodzimy, nie zaganiamy. Rozmazane zdjęcie też się liczy.' },
 
   { id: 'm11', cat: 'C', pts: 6,  title: 'Cztery skarby lasu',
     desc: 'Żołądź, szyszka, kolorowy liść i piórko. Wszystkie cztery naraz.' },
