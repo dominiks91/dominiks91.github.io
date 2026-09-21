@@ -334,6 +334,94 @@
     .wn-cell-lbl { font-size:.79em; color:#888; text-transform:uppercase; letter-spacing:.4px; }
     .wn-cell-val { font-weight:bold; color:#2d3d1d; font-size:1.06em; }
 
+    /* ===== DWA WSKAZNIKI GRZYBOWE ===== */
+.mushroom-indicators {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.mushroom-indicators .mushroom-index {
+  margin-bottom: 0;
+}
+
+.mushroom-summary {
+  background: #f1f7ea;
+  border-left: 4px solid #2d5016;
+  border-radius: 7px;
+  padding: 14px 16px;
+  margin: 0 0 22px;
+  line-height: 1.55;
+  color: #37432f;
+}
+
+.mushroom-summary strong {
+  color: #2d5016;
+}
+
+.mushroom-limitation {
+  display: block;
+  margin-top: 8px;
+  color: #6d7668;
+  font-size: 0.82em;
+}
+
+.mi-source {
+  margin-top: 8px;
+  font-size: 0.78em;
+  opacity: 0.68;
+  line-height: 1.45;
+}
+
+.mi-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  padding: 0;
+  margin-left: 5px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font-size: 0.72em;
+  font-weight: bold;
+  cursor: help;
+  vertical-align: 2px;
+}
+
+.mi-components {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.mi-component {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 9px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.5);
+  font-size: 0.78em;
+}
+
+.mi-component strong {
+  white-space: nowrap;
+}
+
+@media (max-width: 650px) {
+  .mushroom-indicators {
+    grid-template-columns: 1fr;
+  }
+
+  .mi-components {
+    grid-template-columns: 1fr 1fr;
+  }
+}
     .mushroom-index { border-radius:10px; padding:18px; margin-bottom:22px; }
     .mushroom-index.mi-good { background:#e8f5dc; border:2px solid #7aa354; }
     .mushroom-index.mi-mid  { background:#fdf6e3; border:2px solid #e0c069; }
