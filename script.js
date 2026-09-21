@@ -2648,68 +2648,200 @@ function renderWeather(d) {
         </div>`;
     }
 
-    // WSKAZNIK GRZYBOWY
-    const mi = d.mushroomIndex || computeMushroomIndex(d.history);
+       // DWA WSKAZNIKI GRZYBOWE
+    const freshWave = d.mushroomIndex || computeMushroomIndex(d.history);
+    const presence = d.mushroomPresence || null;
 
-    if (mi) {
-      const methodText = mushroomMethodText();
-
+    if (presence || freshWave) {
       html += `
-        <div class="mushroom-index ${miClass(mi.value)}">
-          <div class="mi-head">
-            <span class="mi-title">
-              🍄 Wskaźnik grzybowy
-              <button
-                type="button"
-                class="mi-info"
-                title="${methodText}"
-                aria-label="Informacja o metodologii wskaźnika grzybowego"
-                data-tooltip="${methodText}">i</button>
-            </span>
+        <h3>🍄 Sytuacja grzybowa</h3>
 
-            <span class="mi-value">
-              ${mi.value}<small>/100</small>
+        <p class="weather-sub">
+          Dwa uzupełniające się spojrzenia: ogólna aktywność grzybów
+          i aktualne warunki dla pojawiania się świeżych owocników.
+        </p>
+
+        <div class="mushroom-indicators">
+      `;
+
+      if (presence) {
+        const presenceMethod = mushroomPresenceMethodText();
+        const presenceValue = Math.max(
+          0,
+          Math.min(100, Number(presence.value) || 0)
+        );
+
+        html += `
+          <div class="mushroom-index ${miClass(presenceValue)}">
+            <div class="mi-head">
+              <span class="mi-title">
+                🍄 Aktywność grzybów
+
+                <button
+                  type="button"
+                  class="mi-info"
+                  title="${presenceMethod}"
+                  aria-label="Informacja o wskaźniku aktywności grzybów"
+                  data-tooltip="${presenceMethod}">
+                  i
+                </button>
+              </span>
+
+              <span class="mi-value">
+                ${presenceValue}<small>/100</small>
+              </span>
+            </div>
+
+            <div class="mi-bar">
+              <div
+                class="mi-fill"
+                style="width:${presenceValue}%">
+              </div>
+            </div>
+
+            <div class="mi-label">
+              ${activityLabel(presenceValue, presence.label)}
+            </div>
+
+            <div class="mi-reason">
+              Szacowana ogólna obecność owocników na podstawie
+              wcześniejszych warunków pogodowych.
+            </div>
+
+            ${
+              mushroomSourceText(presence)
+                ? `<div class="mi-source">
+                     ${mushroomSourceText(presence)}
+                   </div>`
+                : ''
+            }
+
+            <div class="mi-note">
+              Wskaźnik eksperymentalny. Nie rozróżnia gatunków
+              jadalnych i niejadalnych.
+            </div>
+          </div>
+        `;
+      }
+
+      if (freshWave) {
+        const freshMethod = mushroomFreshWaveMethodText();
+        const freshValue = Math.max(
+          0,
+          Math.min(100, Number(freshWave.value) || 0)
+        );
+
+        html += `
+          <div class="mushroom-index ${miClass(freshValue)}">
+            <div class="mi-head">
+              <span class="mi-title">
+                🌱 Warunki dla świeżej fali
+
+                <button
+                  type="button"
+                  class="mi-info"
+                  title="${freshMethod}"
+                  aria-label="Informacja o warunkach dla świeżej fali"
+                  data-tooltip="${freshMethod}">
+                  i
+                </button>
+              </span>
+
+              <span class="mi-value">
+                ${freshValue}<small>/100</small>
+              </span>
+            </div>
+
+            <div class="mi-bar">
+              <div
+                class="mi-fill"
+                style="width:${freshValue}%">
+              </div>
+            </div>
+
+            <div class="mi-label">
+              ${freshWaveLabel(freshValue, freshWave.label)}
+            </div>
+
+            ${
+              freshWave.moisture !== undefined &&
+              freshWave.temperature !== undefined &&
+              freshWave.development !== undefined
+                ? `
+                  <div class="mi-components">
+                    <div class="mi-component">
+                      <span>Wilgoć M</span>
+                      <strong>${freshWave.moisture}/100</strong>
+                    </div>
+
+                    <div class="mi-component">
+                      <span>Temperatura T</span>
+                      <strong>${freshWave.temperature}/100</strong>
+                    </div>
+
+                    <div class="mi-component">
+                      <span>Rozwój D</span>
+                      <strong>${freshWave.development}/100</strong>
+                    </div>
+
+                    ${
+                      freshWave.storageMm !== undefined
+                        ? `
+                          <div class="mi-component mi-storage">
+                            <span>Magazyn wilgoci</span>
+                            <strong>
+                              ${fmtRain(freshWave.storageMm, ' mm')}
+                            </strong>
+                          </div>
+                        `
+                        : ''
+                    }
+                  </div>
+                `
+                : ''
+            }
+
+            <div class="mi-reason">
+              Ocena tego, czy obecna sytuacja pogodowa sprzyja
+              powstawaniu kolejnych owocników.
+            </div>
+
+            ${
+              freshWave.reason
+                ? `<div class="mi-source">
+                     ${freshWave.reason}
+                   </div>`
+                : ''
+            }
+
+            ${
+              freshWave.computed
+                ? `
+                  <div class="mi-note">
+                    Wynik awaryjnie wyliczony przez stronę.
+                  </div>
+                `
+                : ''
+            }
+          </div>
+        `;
+      }
+
+      html += `</div>`;
+
+      if (presence && freshWave) {
+        html += `
+          <div class="mushroom-summary">
+            ${mushroomSituationText(presence, freshWave)}
+
+            <span class="mushroom-limitation">
+              Wskaźnik aktywności nie rozróżnia gatunków jadalnych
+              i niejadalnych oraz nie uwzględnia wpływu intensywnego
+              zbierania.
             </span>
           </div>
-
-          <div class="mi-bar">
-            <div class="mi-fill" style="width:${mi.value}%"></div>
-          </div>
-
-          <div class="mi-label">${mi.label}</div>
-
-          ${
-            mi.moisture !== undefined &&
-            mi.temperature !== undefined &&
-            mi.development !== undefined
-              ? `<div class="mi-components">
-                   <div class="mi-component">
-                     <span>Wilgoć M</span>
-                     <strong>${mi.moisture}/100</strong>
-                   </div>
-                   <div class="mi-component">
-                     <span>Temperatura T</span>
-                     <strong>${mi.temperature}/100</strong>
-                   </div>
-                   <div class="mi-component">
-                     <span>Rozwój D</span>
-                     <strong>${mi.development}/100</strong>
-                   </div>
-                   ${mi.storageMm !== undefined
-                     ? `<div class="mi-component mi-storage">
-                          <span>Magazyn wilgoci</span>
-                          <strong>${fmtRain(mi.storageMm, ' mm')}</strong>
-                        </div>`
-                     : ''}
-                 </div>`
-              : ''
-          }
-
-          ${mi.reason ? `<div class="mi-reason">${mi.reason}</div>` : ''}
-          ${mi.computed
-            ? `<div class="mi-note">Wyliczone przez stronę z danych stacji.</div>`
-            : ''}
-        </div>`;
+        `;
+      }
     }
 
     // HISTORIA OPADOW
@@ -2774,8 +2906,9 @@ function renderWeather(d) {
       d.forecast.forEach(f => {
         const dzien = String(f.date) === '2026-10-03';
 
-        // Wskaźnik grzybowy dla konkretnego dnia prognozy.
-        // Pole jest opcjonalne, więc starsze dane nadal wyświetlą się poprawnie.
+        // Prognozowane warunki dla świeżej fali grzybów.
+// To nie jest prognoza liczby grzybów obecnych w danym dniu.
+// Pole jest opcjonalne, więc starsze dane nadal wyświetlą się poprawnie.
         const mushroomPotential = f.mushroomPotential || null;
 
         html += `
@@ -2828,7 +2961,7 @@ function renderWeather(d) {
                     aria-label="${mushroomComponentsText(mushroomPotential)}">
 
                     <div class="fc-mushroom-value">
-                      🍄 ${fmt(
+                      🌱 ${fmt(
                         mushroomPotential.value,
                         '/100',
                         0
@@ -2836,7 +2969,10 @@ function renderWeather(d) {
                     </div>
 
                     <div class="fc-mushroom-label">
-                      ${mushroomPotential.label || ''}
+                      ${freshWaveLabel(
+  mushroomPotential.value,
+  mushroomPotential.label
+)}
                     </div>
                   </div>
                 `
