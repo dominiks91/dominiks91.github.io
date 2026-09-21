@@ -1,3 +1,12 @@
+// ========= TERMINY WYDARZENIA =========
+// Wszystkie mechanizmy strony korzystają z tych samych ustawień.
+// Zmiana terminu odbywa się wyłącznie tutaj.
+
+const EVENT_TIMING = {
+  registrationDeadline: '2026-09-28T23:59:59+02:00',
+  eventStart: '2026-10-03T11:30:00+02:00'
+};
+
 // ========= KONFIGURACJA =========
 const CONFIG = {
   EMAILJS_SERVICE_ID: 'service_kq8zmvw',
@@ -6,10 +15,15 @@ const CONFIG = {
   EMAILJS_PUBLIC_KEY: 'nKv_qZgxWLURjtk2V',
   // Hasła admina NIE MA w tym pliku - siedzi w Apps Script (Wlasciwosci skryptu).
   // Patrz instrukcja, Etap 1.6.
-  REGISTRATION_DEADLINE: new Date('2026-09-28T23:59:59'),
-  MAX_PARTICIPANTS: 40,
-  EVENT_DATE_TEXT: '3 października 2026',
-  EVENT_DATE_ISO: '2026-10-03',        // do sprawdzania daty zdjec
+  REGISTRATION_DEADLINE: new Date(
+  EVENT_TIMING.registrationDeadline
+),
+EVENT_START: new Date(
+  EVENT_TIMING.eventStart
+),
+MAX_PARTICIPANTS: 40,
+EVENT_DATE_TEXT: '3 października 2026',
+EVENT_DATE_ISO: EVENT_TIMING.eventStart.slice(0, 10),
   // Wspolrzedne miejsca zbiorki - do sprawdzania GPS na zdjeciach.
   // Jak je zdobyc: Mapy Google -> prawy klik na miejscu -> kliknij wspolrzedne (kopiuja sie).
   // Zostaw null, jesli nie chcesz sprawdzac lokalizacji.
