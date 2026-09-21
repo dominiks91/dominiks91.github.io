@@ -1131,8 +1131,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderPhotoUploadForm();
   updateMissionsTabVisibility();
   loadMissionPhotos();
-  loadEventSettings();
-  loadWeather();
+startCountdown();
+loadEventSettings();
+loadWeather();
 
   // Spróbuj pobrać aktualne dane z Google Sheets
   try {
@@ -3360,6 +3361,269 @@ window.logoutTeamPhotos = logoutTeamPhotos;
 window.updateMissionsTabVisibility = updateMissionsTabVisibility;
 window.toggleMissionFoto = toggleMissionFoto;
 
+// ================= ODLICZANIE =================
+// 1. Do końca zapisów.
+// 2. Od końca zapisów do rozpoczęcia Grzybobrania.
+// 3. Po ustawieniu godziny powrotu: do powrotu na miejsce zbiórki.
+
+window.RETURN_TIME = null;
+
+let countdownTimer = null;
+
+function formatCountdownDuration(milliseconds) {
+  const totalSeconds = Math.max(
+    0,
+    Math.floor(milliseconds / 1000)
+  );
+
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor(
+    (totalSeconds % 86400) / 3600
+  );
+  const minutes = Math.floor(
+    (totalSeconds % 3600) / 60
+  );
+  const seconds = totalSeconds % 60;
+
+  if (days > 0) {
+    return `${days} dni, ${hours}h ${minutes}m ${seconds}s`;
+  }
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${seconds}s`;
+  }
+
+  return `${minutes}m ${seconds}s`;
+}
+
+function formatEventDay(date) {
+  return date.toLocaleDateString('pl-PL', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+}
+
+function formatEventHour(date) {
+  return date.toLocaleTimeString('pl-PL', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function closeRegistrationForm() {
+  const form = document.getElementById(
+    'registrationForm'
+  );
+
+  if (form) {
+    form
+      .querySelectorAll('input, select, button')
+      .forEach(element => {
+        element.disabled = true;
+      });
+  }
+
+  const panel = document.getElementById(
+    'registration'
+  );
+
+  if (
+    !panel ||
+    panel.querySelector('.deadline-message')
+  ) {
+    return;
+  }
+
+  const message = document.createElement('div');
+
+  message.className = 'deadline-message';
+
+  message.style.cssText =
+    'background:#ffebee;' +
+    'color:#c62828;' +
+    'padding:15px;' +
+    'border-radius:8px;' +
+    'margin:15px 0;' +
+    'border-left:4px solid #c62828;';
+
+  message.innerHTML =
+    '<strong>⚠️ Zapisy zostały zamknięte.</strong><br>' +
+    'Termin rejestracji upłynął ' +
+    formatEventDay(CONFIG.REGISTRATION_DEADLINE) +
+    ' o godz. ' +
+    formatEventHour(CONFIG.REGISTRATION_DEADLINE) +
+    '.';
+
+  if (form) {
+    panel.insertBefore(message, form);
+  } else {
+    panel.appendChild(message);
+  }
+}
+
+function updateCountdown() {
+  const display = document.getElementById(
+    'countdown'
+  );
+
+  const label = document.getElementById(
+    'countdownLabel'
+  );
+
+  const extra = document.getElementById(
+    'countdownExtra'
+  );
+
+  if (!display || !label || !extra) return;
+
+  const now = new Date();
+
+  /*
+   * TRYB 3:
+   * organizator ustawił godzinę powrotu.
+   */
+  if (window.RETURN_TIME) {
+    const returnTime = new Date(
+      window.RETURN_TIME
+    );
+
+    const remaining = returnTime - now;
+    const returnHour = formatEventHour(returnTime);
+
+    label.textContent =
+      '⏱️ Do powrotu na miejsce zbiórki:';
+
+    if (remaining > 0) {
+      display.textContent =
+        formatCountdownDuration(remaining);
+
+      display.className =
+        remaining < 15 * 60000
+          ? 'countdown-expired'
+          : 'countdown-display';
+
+      extra.innerHTML =
+        '<span class="cd-hint">' +
+        `Powrót o ${returnHour}` +
+        '</span>';
+
+      return;
+    }
+
+    const delayMinutes = Math.max(
+      0,
+      Math.ceil(-remaining / 60000)
+    );
+
+    display.textContent =
+      '⏰ Czas powrotu minął!';
+
+    display.className =
+      'countdown-expired';
+
+    extra.innerHTML =
+      '<span class="cd-hint">' +
+      `Powrót był o ${returnHour} · ` +
+      `spóźnienie ${delayMinutes} min = ` +
+      `−${delayMinutes * 2} pkt` +
+      '</span>';
+
+    return;
+  }
+
+  /*
+   * TRYB 1:
+   * zapisy są otwarte.
+   */
+  if (now < CONFIG.REGISTRATION_DEADLINE) {
+    const remaining =
+      CONFIG.REGISTRATION_DEADLINE - now;
+
+    label.textContent =
+      '⏳ Czas do zamknięcia zapisów:';
+
+    display.textContent =
+      formatCountdownDuration(remaining);
+
+    display.className =
+      'countdown-display';
+
+    extra.innerHTML =
+      '<span class="cd-hint">' +
+      'Zapisy do ' +
+      formatEventDay(CONFIG.REGISTRATION_DEADLINE) +
+      ', godz. ' +
+      formatEventHour(CONFIG.REGISTRATION_DEADLINE) +
+      '</span>';
+
+    return;
+  }
+
+  closeRegistrationForm();
+
+  /*
+   * TRYB 2:
+   * zapisy są zamknięte, ale wydarzenie
+   * jeszcze się nie rozpoczęło.
+   */
+  if (now < CONFIG.EVENT_START) {
+    const remaining =
+      CONFIG.EVENT_START - now;
+
+    label.textContent =
+      '🍄 Do rozpoczęcia Grzybobrania:';
+
+    display.textContent =
+      formatCountdownDuration(remaining);
+
+    display.className =
+      'countdown-display';
+
+    extra.innerHTML =
+      '<span class="cd-hint">' +
+      'Start ' +
+      formatEventDay(CONFIG.EVENT_START) +
+      ' o godz. ' +
+      formatEventHour(CONFIG.EVENT_START) +
+      '</span>';
+
+    return;
+  }
+
+  /*
+   * Grzybobranie trwa, ale organizator
+   * nie ustawił jeszcze godziny powrotu.
+   */
+  label.textContent =
+    '🍄 II Wielkie Grzybobranie trwa!';
+
+  display.textContent =
+    'Powodzenia w lesie!';
+
+  display.className =
+    'countdown-display';
+
+  extra.innerHTML =
+    '<span class="cd-hint">' +
+    'Godzina powrotu pojawi się po jej ustawieniu przez organizatora.' +
+    '</span>';
+}
+
+function startCountdown() {
+  updateCountdown();
+
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+  }
+
+  countdownTimer = setInterval(
+    updateCountdown,
+    1000
+  );
+}
+
+
 // ================= GODZINA POWROTU =================
 // Organizator ustawia ją w panelu admina, a licznik na stronie głównej
 // przełącza się z odliczania do zamknięcia zapisów na odliczanie do powrotu.
@@ -3396,8 +3660,22 @@ function renderReturnTimeStatus() {
       inp.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}` +
                   `T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
-  } else {
-    box.innerHTML = '<span class="rt-off">Nie ustawiona — licznik odlicza do zamknięcia zapisów.</span>';
+    } else {
+    const przedZapisami =
+      new Date() < CONFIG.REGISTRATION_DEADLINE;
+
+    const tekst = przedZapisami
+      ? 'Nie ustawiona - licznik odlicza do zamknięcia zapisów.'
+      : (
+          new Date() < CONFIG.EVENT_START
+            ? 'Nie ustawiona - licznik odlicza do rozpoczęcia Grzybobrania.'
+            : 'Nie ustawiona - Grzybobranie trwa, ale godzina powrotu nie została jeszcze podana.'
+        );
+
+    box.innerHTML =
+      '<span class="rt-off">' +
+      tekst +
+      '</span>';
   }
 }
 
