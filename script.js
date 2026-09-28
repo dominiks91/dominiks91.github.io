@@ -35,7 +35,7 @@ EVENT_DATE_ISO: EVENT_TIMING.eventStart.slice(0, 10),
   // sie nie wyswietla, np. 'https://grzybobranie.pages.dev/'  (ze slashem na koncu!)
   SITE_URL_OVERRIDE: '',
   // <-- WKLEJ TU NOWY URL /exec z tegorocznego wdrożenia Apps Script
-  WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbwqQVZSx1I3gxAVzvIAQR3SAudeWV09qC0_XUTN-ffE2zq2bxX6fdWFQUbxvWsDNpe-bw/exec'
+  WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbwj-GWMcltI_e6AZeYLTWifGaphVi2WcRYBngc75hWWLQ5-ccBGcPDeNtXhpOIH9vI5Zg/exec'
 };
 
 // ===== ZDJECIA Z ZESZLEGO ROKU =====
@@ -1193,14 +1193,66 @@ const MISSIONS = [
     desc: 'Sarna, łoś, jeleń, dzik, lis, wiewiórka, zając, borsuk, wilk, żuraw. Z bezpiecznej odległości — ' +
           'nie podchodzimy, nie zaganiamy. Rozmazane zdjęcie też się liczy.' },
 
-  { id: 'm11', cat: 'C', pts: 6,  title: 'Cztery skarby lasu',
-    desc: 'Żołądź, szyszka, kolorowy liść i piórko. Wszystkie cztery naraz.' },
+  {
+  id: 'm11',
+  cat: 'C',
+  pts: 6,
+  title: 'Tajna misja leśna',
+  desc: 'Szczegóły zostaną ujawnione po rozpoczęciu Grzybobrania.',
+  secret: true,
+  revealed: false
+},
   { id: 'm12', cat: 'C', pts: 10, title: 'Miss Kapelusza',
     desc: 'Wystawiacie jednego najładniejszego grzyba. Każdy kapitan ocenia go od 0 do 10 pkt, ' +
           'z pominięciem własnej drużyny. To jedyna ocena uznaniowa i najczęściej rozstrzyga remisy.',
     judged: true }
 ];
 
+function applySecretMissionSettings(settings) {
+  const mission = MISSIONS.find(
+    m => m.id === 'm11'
+  );
+
+  if (!mission) return;
+
+  const revealed =
+    settings &&
+    settings.secretMissionRevealed &&
+    settings.secretMission;
+
+  if (revealed) {
+    mission.title =
+      settings.secretMission.title ||
+      'Cztery skarby lasu';
+
+    mission.desc =
+      settings.secretMission.description ||
+      '';
+
+    mission.revealed = true;
+  } else {
+    mission.title =
+      'Tajna misja leśna';
+
+    mission.desc =
+      'Szczegóły zostaną ujawnione po rozpoczęciu Grzybobrania.';
+
+    mission.revealed = false;
+
+    // Po ponownym ukryciu nie pozostawiamy
+    // przypadkowego wcześniejszego zaznaczenia.
+    delete missionState.m11;
+  }
+
+  renderMissionCard();
+
+  if (
+    isJudgeMode &&
+    currentJudgedTeam !== null
+  ) {
+    renderJudgeCard();
+  }
+}
 const PENALTIES = [
   { pts: -15, title: 'Grzyb trujący w koszu',        desc: 'Za każdą sztukę. Bezpieczeństwo przede wszystkim.' },
   { pts: -10, title: 'Reklamówka zamiast koszyka',   desc: 'Grzyby w plastiku się parzą. Koszyk obowiązkowy.' },
@@ -1220,11 +1272,24 @@ let missBeautyScore = 0;
 
 function missionTotal() {
   let sum = 0;
+
   MISSIONS.forEach(m => {
     if (m.judged) return;
-    if (missionState[m.id]) sum += m.pts;
+
+    if (
+      m.secret &&
+      !m.revealed
+    ) {
+      return;
+    }
+
+    if (missionState[m.id]) {
+      sum += m.pts;
+    }
   });
+
   sum += missBeautyScore;
+
   return sum;
 }
 
@@ -1240,7 +1305,26 @@ function toggleMissionFoto(id) {
 }
 
 function toggleMission(id) {
-  missionState[id] = !missionState[id];
+  const mission = MISSIONS.find(
+    m => m.id === id
+  );
+
+  if (
+    mission &&
+    mission.secret &&
+    !mission.revealed
+  ) {
+    showMessage(
+      'Ta misja nie została jeszcze ujawniona.',
+      'info'
+    );
+
+    return;
+  }
+
+  missionState[id] =
+    !missionState[id];
+
   renderMissionCard();
 }
 
