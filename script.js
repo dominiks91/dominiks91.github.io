@@ -1431,12 +1431,36 @@ function printMissionCards() {
       const c = CAT_NAMES[cat];
       rows += `<tr class="cat"><td colspan="3">${c.icon} ${c.name}</td></tr>`;
       MISSIONS.filter(m => m.cat === cat).forEach(m => {
-        rows += `<tr>
-                   <td class="box">${m.judged ? '' : '☐'}</td>
-                   <td><b>${m.title}</b><br><span class="d">${m.desc}</span></td>
-                   <td class="p">${m.judged ? '__/' + m.pts : m.pts}</td>
-                 </tr>`;
-      });
+  const printTitle =
+    m.id === 'm11'
+      ? 'Tajna misja leśna'
+      : m.title;
+
+  const printDescription =
+    m.id === 'm11'
+      ? 'Szczegóły ogłosi organizator po rozpoczęciu Grzybobrania.'
+      : m.desc;
+
+  rows += `
+    <tr>
+      <td class="box">
+        ${m.judged ? '' : '☐'}
+      </td>
+
+      <td>
+        <b>${printTitle}</b>
+        <br>
+        <span class="d">
+          ${printDescription}
+        </span>
+      </td>
+
+      <td class="p">
+        ${m.judged ? '__/' + m.pts : m.pts}
+      </td>
+    </tr>
+  `;
+});
     });
     rows += `<tr class="cat"><td colspan="3">⛔ KARY</td></tr>`;
     PENALTIES.forEach(p => {
@@ -1729,31 +1753,54 @@ function renderJudgeCard() {
   const box = document.getElementById('judgeCard');
   if (!box) return;
 
-  const team = teams.find(t => String(t.id) === String(currentJudgedTeam));
-  if (!team) { box.innerHTML = ''; return; }
+  const team = teams.find(
+    t => String(t.id) === String(currentJudgedTeam)
+  );
+
+  if (!team) {
+    box.innerHTML = '';
+    return;
+  }
 
   const st = judgeStateFor(team.id);
   const pelny = judgeIsChairman || judgeIsAdmin;
-  let html = `<h3 class="judge-team-title">🧺 ${team.name}</h3>`;
 
-  // Zwykły kapitan głosuje wyłącznie na Miss Kapelusza
+  let html = `
+    <h3 class="judge-team-title">
+      🧺 ${team.name}
+    </h3>
+  `;
+
+  // Zwykły kapitan głosuje wyłącznie na Miss Kapelusza.
   if (!pelny) {
-    const m = MISSIONS.filter(x => x.judged)[0];
+    const m = MISSIONS.filter(
+      x => x.judged
+    )[0];
 
     html += `
       <div class="mission-cat">
-        <div class="mission-cat-head"><span>👑 MISS KAPELUSZA</span><small>Twój głos</small></div>
+        <div class="mission-cat-head">
+          <span>👑 MISS KAPELUSZA</span>
+          <small>Twój głos</small>
+        </div>
+
         <div class="mission-row judged">
           <div class="mission-body">
-            <div class="mission-desc">${m ? m.desc : ''}</div>
+            <div class="mission-desc">
+              ${m ? m.desc : ''}
+            </div>
+
             ${voteBoxHtml(team)}
           </div>
         </div>
       </div>
+
       <div class="note-box">
-        Misje, wagę i kary wpisuje <strong>przewodniczący komisji</strong>.
+        Misje, wagę i kary wpisuje
+        <strong>przewodniczący komisji</strong>.
         Ty głosujesz tylko na Miss Kapelusza.
-      </div>`;
+      </div>
+    `;
 
     box.innerHTML = html;
     return;
@@ -1761,94 +1808,255 @@ function renderJudgeCard() {
 
   ['A', 'B', 'C'].forEach(cat => {
     const c = CAT_NAMES[cat];
-    html += `<div class="mission-cat">
-               <div class="mission-cat-head"><span>${c.icon} ${c.name}</span><small>${c.hint}</small></div>`;
 
-    MISSIONS.filter(m => m.cat === cat).forEach(m => {
-      if (m.judged) {
-        html += `
-          <div class="mission-row judged">
-            <div class="mission-body">
-              <div class="mission-title">${m.title}<span class="mission-pts">0–${m.pts} pkt</span></div>
-              <div class="mission-desc">${m.desc}</div>
-              ${voteBoxHtml(team)}
+    html += `
+      <div class="mission-cat">
+        <div class="mission-cat-head">
+          <span>${c.icon} ${c.name}</span>
+          <small>${c.hint}</small>
+        </div>
+    `;
+
+    MISSIONS
+      .filter(m => m.cat === cat)
+      .forEach(m => {
+        /*
+         * Tajna misja przed ustawieniem godziny powrotu.
+         * Komisja widzi nazwę zastępczą, opis zastępczy
+         * oraz kłódkę zamiast pola do zaznaczenia.
+         */
+        if (m.secret && !m.revealed) {
+          html += `
+            <div class="mission-row secret-locked">
+              <div class="mission-check">
+                🔒
+              </div>
+
+              <div class="mission-body">
+                <div class="mission-title">
+                  ${m.title}
+
+                  <span class="mission-pts">
+                    ${m.pts} pkt
+                  </span>
+                </div>
+
+                <div class="mission-desc">
+                  ${m.desc}
+                </div>
+              </div>
             </div>
-          </div>`;
-      } else {
+          `;
+
+          return;
+        }
+
+        /*
+         * Misja oceniana przez kapitanów,
+         * czyli Miss Kapelusza.
+         */
+        if (m.judged) {
+          html += `
+            <div class="mission-row judged">
+              <div class="mission-body">
+                <div class="mission-title">
+                  ${m.title}
+
+                  <span class="mission-pts">
+                    0–${m.pts} pkt
+                  </span>
+                </div>
+
+                <div class="mission-desc">
+                  ${m.desc}
+                </div>
+
+                ${voteBoxHtml(team)}
+              </div>
+            </div>
+          `;
+
+          return;
+        }
+
+        /*
+         * Zwykła, ujawniona misja.
+         */
         const on = !!st.missions[m.id];
-        const foty = missionPhotos.filter(p =>
-          String(p.teamId) === String(team.id) && p.missionId === m.id);
+
+        const foty = missionPhotos.filter(
+          p =>
+            String(p.teamId) === String(team.id) &&
+            p.missionId === m.id
+        );
 
         html += `
           <div class="mission-row ${on ? 'done' : ''}">
-            <div class="mission-check" onclick="toggleJudgeMission(${team.id}, '${m.id}')">${on ? '✔' : ''}</div>
-            <div class="mission-body" onclick="toggleJudgeMission(${team.id}, '${m.id}')">
-              <div class="mission-title">${m.title}<span class="mission-pts">${m.pts} pkt</span></div>
-              <div class="mission-desc">${m.desc}</div>
-            </div>`;
+            <div
+              class="mission-check"
+              onclick="toggleJudgeMission(${team.id}, '${m.id}')">
+              ${on ? '✔' : ''}
+            </div>
 
-        html += `</div>`;
+            <div
+              class="mission-body"
+              onclick="toggleJudgeMission(${team.id}, '${m.id}')">
 
+              <div class="mission-title">
+                ${m.title}
+
+                <span class="mission-pts">
+                  ${m.pts} pkt
+                </span>
+              </div>
+
+              <div class="mission-desc">
+                ${m.desc}
+              </div>
+            </div>
+          </div>
+        `;
+
+        /*
+         * Weryfikacja zdjęć dla misji fotograficznych.
+         */
         if (PHOTO_MISSIONS.indexOf(m.id) !== -1) {
           html += foty.length
-            ? `<div class="photo-check">${foty.map(f => {
-                const flagi = ocenZdjecie(f.exif);
-                return `<div class="pc-item">
-                    <a href="${f.full}" target="_blank" rel="noopener">
-                      <img src="${f.thumb}" alt="Zdjęcie drużyny"></a>
-                    <div class="pc-flags">${flagi.map(fl =>
-                      `<span class="pc-flag pc-${fl.typ}">${
-                        fl.typ === 'ok' ? '✓' : fl.typ === 'zle' ? '⚠' : 'ℹ'
-                      } ${fl.tekst}</span>`).join('')}</div>
-                  </div>`;
-              }).join('')}</div>`
-            : `<div class="photo-check"><div class="judge-nophoto">brak zdjęcia</div></div>`;
+            ? `
+              <div class="photo-check">
+                ${foty.map(f => {
+                  const flagi = ocenZdjecie(f.exif);
+
+                  return `
+                    <div class="pc-item">
+  <a href="$    <imgthumb}
+  </a>
+
+                      <div class="pc-flags">
+                        ${flagi.map(fl => `
+                          <span class="pc-flag pc-${fl.typ}">
+                            ${
+                              fl.typ === 'ok'
+                                ? '✓'
+                                : fl.typ === 'zle'
+                                  ? '⚠'
+                                  : 'ℹ'
+                            }
+                            ${fl.tekst}
+                          </span>
+                        `).join('')}
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            `
+            : `
+              <div class="photo-check">
+                <div class="judge-nophoto">
+                  brak zdjęcia
+                </div>
+              </div>
+            `;
         }
-      }
-    });
+      });
+
     html += `</div>`;
   });
 
-  // waga + kary + czas
+  // Waga, kary i godzina powrotu drużyny.
   html += `
     <div class="mission-cat">
-      <div class="mission-cat-head"><span>⚖️ WAGA I KARY</span><small>Wpisuje komisja</small></div>
+      <div class="mission-cat-head">
+        <span>⚖️ WAGA I KARY</span>
+        <small>Wpisuje komisja</small>
+      </div>
 
       <div class="judge-field">
         <label>Waga zbioru (kg)</label>
-        <input type="number" step="0.01" min="0" inputmode="decimal"
-               value="${st.weight}" placeholder="np. 3,47"
-               oninput="setJudgeWeight(${team.id}, this.value)">
-        <span class="judge-hint">1 kg = 1 pkt, zaokrąglane do 0,1 kg &rarr;
-          <strong id="wagaPkt_${team.id}">${formatWeightPoints(st.weight)}</strong> pkt</span>
+
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          inputmode="decimal"
+          value="${st.weight}"
+          placeholder="np. 3,47"
+          oninput="setJudgeWeight(${team.id}, this.value)">
+
+        <span class="judge-hint">
+          1 kg = 1 pkt, zaokrąglane do 0,1 kg →
+          <strong id="wagaPkt_${team.id}">
+            ${formatWeightPoints(st.weight)}
+          </strong>
+          pkt
+        </span>
       </div>
 
       <div class="judge-field">
         <label>Kary (punkty ujemne)</label>
-        <input type="number" step="1" min="0" value="${st.penalties}"
-               oninput="setJudgePenalties(${team.id}, this.value)">
-        <span class="judge-hint">Trujący grzyb −15 &middot; reklamówka −10 &middot; spóźnienie −2/min</span>
+
+        <input
+          type="number"
+          step="1"
+          min="0"
+          value="${st.penalties}"
+          oninput="setJudgePenalties(${team.id}, this.value)">
+
+        <span class="judge-hint">
+          Trujący grzyb −15 · reklamówka −10 ·
+          spóźnienie −2/min
+        </span>
       </div>
 
       <div class="judge-field">
         <label>Godzina powrotu</label>
-        <input type="time" value="${st.returnTime}"
-               oninput="setJudgeReturn(${team.id}, this.value)">
-        <span class="judge-hint">Rozstrzyga przy remisie</span>
+
+        <input
+          type="time"
+          value="${st.returnTime}"
+          oninput="setJudgeReturn(${team.id}, this.value)">
+
+        <span class="judge-hint">
+          Rozstrzyga przy remisie
+        </span>
       </div>
     </div>
 
     <div class="judge-summary">
-      <div>Misje: <b>${judgeMissionPoints(team.id)}</b></div>
-      <div>Miss Kapelusza: <b>${missOf(team.id)}</b></div>
-      <div>Waga: <b>${formatWeightPoints(st.weight)}</b></div>
-      <div>Kary: <b>−${st.penalties || 0}</b></div>
-      <div class="judge-total">SUMA: <b>${judgeTotal(team.id)}</b></div>
+      <div>
+        Misje:
+        <b>${judgeMissionPoints(team.id)}</b>
+      </div>
+
+      <div>
+        Miss Kapelusza:
+        <b>${missOf(team.id)}</b>
+      </div>
+
+      <div>
+        Waga:
+        <b>${formatWeightPoints(st.weight)}</b>
+      </div>
+
+      <div>
+        Kary:
+        <b>−${st.penalties || 0}</b>
+      </div>
+
+      <div class="judge-total">
+        SUMA:
+        <b>${judgeTotal(team.id)}</b>
+      </div>
     </div>
 
-    <button class="mission-btn primary judge-save" onclick="saveJudgeScore(${team.id})">
+    <button
+      class="mission-btn primary judge-save"
+      onclick="saveJudgeScore(${team.id})">
+
       💾 Zapisz wynik drużyny ${team.name}
-    </button>`;
+    </button>
+  `;
 
   box.innerHTML = html;
 }
@@ -1867,9 +2075,24 @@ function missOf(teamId) {
 
 function judgeMissionPoints(teamId) {
   const st = judgeStateFor(teamId);
-  let s = 0;
-  MISSIONS.forEach(m => { if (!m.judged && st.missions[m.id]) s += m.pts; });
-  return s;
+  let suma = 0;
+
+  MISSIONS.forEach(mission => {
+    if (mission.judged) return;
+
+    if (
+      mission.secret &&
+      !mission.revealed
+    ) {
+      return;
+    }
+
+    if (st.missions[mission.id]) {
+      suma += mission.pts;
+    }
+  });
+
+  return suma;
 }
 
 // Zaokraglenie do 0,1 kg wg zasad matematycznych
@@ -1890,8 +2113,28 @@ function judgeTotal(teamId) {
 }
 
 function toggleJudgeMission(teamId, missionId) {
+  const mission = MISSIONS.find(
+    m => m.id === missionId
+  );
+
+  if (
+    mission &&
+    mission.secret &&
+    !mission.revealed
+  ) {
+    showMessage(
+      'Ta misja nie została jeszcze ujawniona.',
+      'info'
+    );
+
+    return;
+  }
+
   const st = judgeStateFor(teamId);
-  st.missions[missionId] = !st.missions[missionId];
+
+  st.missions[missionId] =
+    !st.missions[missionId];
+
   renderJudgeCard();
 }
 function castBeautyVote(teamId, ocena) {
@@ -3714,17 +3957,43 @@ function startCountdown() {
 // Wartość trzyma Apps Script, więc wszyscy widzą tę samą godzinę.
 
 function loadEventSettings() {
-  jsonpRequest('getSettings', {})
-    .then(s => {
-      if (s && s.returnTime) {
-        window.RETURN_TIME = s.returnTime;
+  jsonpRequest('getSettings', {
+    _: Date.now()
+  })
+    .then(settings => {
+      if (
+        settings &&
+        settings.returnTime
+      ) {
+        window.RETURN_TIME =
+          settings.returnTime;
       } else {
         window.RETURN_TIME = null;
       }
-      if (typeof updateCountdown === 'function') updateCountdown();
+
+      applySecretMissionSettings(
+        settings || {}
+      );
+
+      if (
+        typeof updateCountdown ===
+        'function'
+      ) {
+        updateCountdown();
+      }
+
       renderReturnTimeStatus();
     })
-    .catch(() => {});
+    .catch(error => {
+      console.error(
+        'Nie udało się pobrać ustawień wydarzenia:',
+        error
+      );
+
+      applySecretMissionSettings({
+        secretMissionRevealed: false
+      });
+    });
 }
 
 function renderReturnTimeStatus() {
@@ -3776,10 +4045,24 @@ function saveReturnTime() {
   jsonpRequest('setReturnTime', { token: adminToken, value: d.toISOString() })
     .then(res => {
       if (res && res.status === 'success') {
-        window.RETURN_TIME = res.returnTime;
-        if (typeof updateCountdown === 'function') updateCountdown();
-        renderReturnTimeStatus();
-        showMessage('Licznik przełączony na odliczanie do powrotu.', 'success');
+        window.RETURN_TIME =
+  res.returnTime;
+
+applySecretMissionSettings(res);
+
+if (
+  typeof updateCountdown ===
+  'function'
+) {
+  updateCountdown();
+}
+
+renderReturnTimeStatus();
+
+showMessage(
+  'Ustawiono godzinę powrotu. Tajna misja została ujawniona!',
+  'success'
+);
       } else {
         showMessage('Nie udało się zapisać: ' + ((res && res.error) || 'błąd'), 'error');
       }
@@ -3793,7 +4076,15 @@ function clearReturnTime() {
     .then(res => {
       if (res && res.status === 'success') {
         window.RETURN_TIME = null;
-        const inp = document.getElementById('returnTimeInput');
+
+applySecretMissionSettings({
+  secretMissionRevealed: false
+});
+
+const inp =
+  document.getElementById(
+    'returnTimeInput'
+  );
         if (inp) inp.value = '';
         if (typeof updateCountdown === 'function') updateCountdown();
         renderReturnTimeStatus();
