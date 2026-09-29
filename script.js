@@ -128,6 +128,9 @@ function showTab(tabId) {
 
   const button = document.querySelector(`[onclick="showTab('${tabId}')"]`);
   if (button) button.classList.add('active');
+    trackAnalyticsEvent('tab_open', {
+    tab_name: tabId
+  });
 }
 
 // ========= AKTUALIZACJA LICZBY UCZESTNIKÓW =========
@@ -1096,7 +1099,7 @@ function debugGoogleSheets() {
 // ========= START =========
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('🍄 Inicjalizacja aplikacji Grzybobranie...');
-
+  initializeAnalyticsConsent();
   // Ładowanie danych z localStorage
   let stored = null;
   try { stored = localStorage.getItem('grzybobranie_participants'); } catch (e) {}
@@ -1230,6 +1233,9 @@ function applySecretMissionSettings(settings) {
       '';
 
     mission.revealed = true;
+    trackAnalyticsEvent('secret_mission_revealed', {
+  mission_id: mission.id
+});
   } else {
     mission.title =
       'Tajna misja leśna';
@@ -2572,6 +2578,9 @@ async function uploadMissionPhoto() {
     fileInput.value = '';
     status.textContent = '✅ Zdjęcie zapisane i widoczne poniżej.';
     showMessage('Zdjęcie zostało zapisane.', 'success');
+    trackAnalyticsEvent('photo_upload_success', {
+  mission_id: missionId
+});
   } catch (err) {
     console.error('Błąd wysyłania zdjęcia:', err);
     status.textContent = '❌ ' + err.message;
@@ -4120,3 +4129,116 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
+// ================= GOOGLE ANALYTICS =================
+
+const GA_MEASUREMENT_ID = 'G-FE0PBCCT9P';
+const ANALYTICS_CONSENT_KEY = 'grzybobranie_analytics_consent';
+
+let analyticsLoaded = false;
+
+function loadGoogleAnalytics() {
+  if (analyticsLoaded) return;
+
+  analyticsLoaded = true;
+
+  window.dataLayer = window.dataLayer || [];
+
+  window.gtag = function () {
+    window.dataLayer.push(arguments);
+  };
+
+  window.gtag('js', new Date());
+
+  window.gtag('config', GA_MEASUREMENT_ID, {
+    anonymize_ip: true,
+    send_page_view: true
+  });
+
+  const script = document.createElement('script');
+
+  script.async = true;
+  script.src =
+    'https://www.googletagmanager.com/gtag/js?id=' +
+    encodeURIComponent(GA_MEASUREMENT_ID);
+
+  document.head.appendChild(script);
+}
+
+function showAnalyticsConsent() {
+  const box = document.getElementById('analyticsConsent');
+
+  if (box) {
+    box.style.display = 'flex';
+  }
+}
+
+function hideAnalyticsConsent() {
+  const box = document.getElementById('analyticsConsent');
+
+  if (box) {
+    box.style.display = 'none';
+  }
+}
+
+function acceptAnalytics() {
+  try {
+    localStorage.setItem(
+      ANALYTICS_CONSENT_KEY,
+      'accepted'
+    );
+  } catch (error) {}
+
+  hideAnalyticsConsent();
+  loadGoogleAnalytics();
+}
+
+function rejectAnalytics() {
+  try {
+    localStorage.setItem(
+      ANALYTICS_CONSENT_KEY,
+      'rejected'
+    );
+  } catch (error) {}
+
+  hideAnalyticsConsent();
+}
+
+function initializeAnalyticsConsent() {
+  let choice = null;
+
+  try {
+    choice = localStorage.getItem(
+      ANALYTICS_CONSENT_KEY
+    );
+  } catch (error) {}
+
+  if (choice === 'accepted') {
+    loadGoogleAnalytics();
+    return;
+  }
+
+  if (choice === 'rejected') {
+    return;
+  }
+
+  showAnalyticsConsent();
+}
+
+function trackAnalyticsEvent(eventName, parameters) {
+  if (
+    !analyticsLoaded ||
+    typeof window.gtag !== 'function'
+  ) {
+    return;
+  }
+
+  window.gtag(
+    'event',
+    eventName,
+    parameters || {}
+  );
+}
+
+window.acceptAnalytics = acceptAnalytics;
+window.rejectAnalytics = rejectAnalytics;
+window.trackAnalyticsEvent = trackAnalyticsEvent;
