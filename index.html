@@ -732,9 +732,101 @@
   hyphens: auto;
   -webkit-hyphens: auto;
 }   
+  /* ===== ZGODA NA ANONIMOWE STATYSTYKI ===== */
+.analytics-consent {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 20000;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 16px 18px;
+  box-sizing: border-box;
+  background: #ffffff;
+  border: 2px solid #2d5016;
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.analytics-consent-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.analytics-consent-text strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #2d5016;
+}
+
+.analytics-consent-text span {
+  display: block;
+  color: #555555;
+  font-size: 0.9em;
+  line-height: 1.45;
+}
+
+.analytics-consent-buttons {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.analytics-consent button {
+  padding: 10px 13px;
+  border: 0;
+  border-radius: 6px;
+  background: #eeeeee;
+  color: #555555;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.analytics-consent button.analytics-accept {
+  background: #2d5016;
+  color: #ffffff;
+}
+
+@media (max-width: 650px) {
+  .analytics-consent {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .analytics-consent-buttons {
+    width: 100%;
+  }
+
+  .analytics-consent-buttons button {
+    flex: 1;
+  }
+}
   </style>
 </head>
 <body>
+  <div id="analyticsConsent" class="analytics-consent" style="display:none">
+  <div class="analytics-consent-text">
+    <strong>Anonimowe statystyki</strong>
+    <span>
+      Czy zgadzasz się na anonimowy pomiar korzystania ze strony?
+      Pomoże to ulepszyć kolejną edycję Grzybobrania.
+    </span>
+  </div>
+
+  <div class="analytics-consent-buttons">
+    <button type="button" onclick="rejectAnalytics()">
+      Tylko niezbędne
+    </button>
+
+    <button type="button" class="analytics-accept" onclick="acceptAnalytics()">
+      Zgadzam się
+    </button>
+  </div>
+</div>
   <div class="container">
     <div class="header">
       <div class="header-content">
